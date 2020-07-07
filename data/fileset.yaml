@@ -33,6 +33,12 @@ doublemuon_test:
       year: "2017"
       path: 
         - "data/path/DoubleMuon/DoubleMuonAODpath.txt"
+     
+    - primary_dataset: "DoubleMuon"
+      datatier: "MINIAOD"
+      year: "2017"
+      path: 
+        - "data/path/DoubleMuon/DoubleMuonMINIAODpath.txt"
 
 # MuOnia 2010 data DESY
 data2010:
