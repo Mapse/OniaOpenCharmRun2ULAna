@@ -24,9 +24,10 @@ if config_yaml['executor'] == 'futures_executor':
 
 tstart = time.time()
 
-files = {'Charmonium2017MINIAOD': filesets['Charmonium2017MINIAOD'][0:10], 
-           'MuOnia2017MINIAOD': filesets['MuOnia2017MINIAOD'][0:10], 
-           'DoubleMuon2017AOD': filesets['DoubleMuon2017AOD'][0:30]
+files = {'Charmonium2017ULMINIAOD': filesets['Charmonium2017MINIAOD'][0:5], 
+           'MuOnia2017ULMINIAOD': filesets['MuOnia2017MINIAOD'][0:5], 
+           'DoubleMuon2017ULAOD': filesets['DoubleMuon2017AOD'][0:5],
+           'DoubleMuon2017ULMINIAOD': filesets['DoubleMuon2017MINIAOD'][0:5]
           }
 
 output = processor.run_uproot_job(files,
