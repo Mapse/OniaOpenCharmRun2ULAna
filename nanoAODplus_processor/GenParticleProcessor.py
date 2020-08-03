@@ -32,6 +32,11 @@ class GenParticleProcessor(processor.ProcessorABC):
       Dplus_rec_pt_axis = hist.Bin("pt", r"$p_{T,D^0}$ [GeV]", 3000, 0.25, 300)
       Dplus_rec_eta_axis = hist.Bin("eta", r"$\eta_{D^0}$", 100, -5.0, 5.0)
       Dplus_rec_phi_axis = hist.Bin("phi", r"$\phi_{D^0}$", 70, -3.5, 3.5)
+
+      Dsplus_rec_mass_axis = hist.Bin("mass", r"$m_{D^+_s}$ [GeV]", 10, 1.86, 2.00)
+      Dsplus_rec_pt_axis = hist.Bin("pt", r"$p_{T,D^+_s}$[GeV]" , 3000, 0.25, 300)
+      Dsplus_rec_eta_axis = hist.Bin("eta", r"$\eta_{D^+_s}$", 100, -5.0, 5.0)
+      Dsplus_rec_phi_axis = hist.Bin("phi", r"$\phi_{D^+_s}$", 70, -3.5, 3.5)
       
       self._accumulator = processor.dict_accumulator({
          'Muon_lead_pt': hist.Hist("Counts", dataset_axis, Muon_lead_pt_axis),
@@ -54,6 +59,10 @@ class GenParticleProcessor(processor.ProcessorABC):
          'Dplus_rec_pt': hist.Hist("Counts", dataset_axis, Dplus_rec_pt_axis),
          'Dplus_rec_eta': hist.Hist("Counts", dataset_axis, Dplus_rec_eta_axis),
          'Dplus_rec_phi': hist.Hist("Counts", dataset_axis, Dplus_rec_phi_axis),
+         'Dsplus_rec_mass': hist.Hist("Counts", dataset_axis, Dsplus_rec_mass_axis),
+         'Dsplus_rec_pt': hist.Hist("Counts", dataset_axis, Dsplus_rec_pt_axis),
+         'Dsplus_rec_eta': hist.Hist("Counts", dataset_axis, Dsplus_rec_eta_axis),
+         'Dsplus_rec_phi': hist.Hist("Counts", dataset_axis, Dsplus_rec_phi_axis),
          'cutflow': processor.defaultdict_accumulator(int),
       })
     
@@ -148,15 +157,46 @@ class GenParticleProcessor(processor.ProcessorABC):
       output['cutflow']['same_vtx_pion_pion'] += Pion_pion.counts.sum()
       
       Dplus_rec = Pion_pion.cross(Kaon)
-      opposite_charge_dplus_rec = ( Dplus_rec.i0.i0['charge'] * Dplus_rec.i0.i1['charge'] * Dplus_rec.i1['charge'] < 0)
+      opposite_charge_dplus_rec = ( Dplus_rec.i0.i0['charge'] * Dplus_rec.i1['charge'] < 0)
       Dplus_rec = Dplus_rec[opposite_charge_dplus_rec]
       output['cutflow']['opposite_charge_dplus_rec'] += Dplus_rec.counts.sum()
+
+      Dplus_rec_same_vtx = ( (Dplus_rec.i0.i0['vx'] == Dplus_rec.i1['vx']) & (Dplus_rec.i0.i0['vy'] == Dplus_rec.i1['vy']) & (Dplus_rec.i0.i0['vz'] == Dplus_rec.i1['vz']))
+      Dplus_rec = Dplus_rec[Dplus_rec_same_vtx]
+      output['cutflow']['dplus_rec_same_vtx'] += Dplus_rec.counts.sum()
 
       Dplus_mass_cut = ((Dplus_rec.mass < 1.872) & (Dplus_rec.mass > 1.866))
       Dplus_rec = Dplus_rec[Dplus_mass_cut]
       output['cutflow']['Dplus_mass_cut'] += Dplus_rec.counts.sum()
 
       ######################## End of D+ reconstructed selection ########################
+
+      ######################## Ds+ reconstructed selection ########################
+
+      Kaon_kaon = Kaon.distincts()
+
+      opposite_charge_kaon_kaon = (Kaon_kaon.i0['charge'] * Kaon_kaon.i1['charge'] < 0)
+      Kaon_kaon = Kaon_kaon[opposite_charge_kaon_kaon]
+      output['cutflow']['opposite_charge_kaon_kaon'] += Kaon_kaon.counts.sum()
+
+      same_vtx_kaon_kaon = ((Kaon_kaon.i0['vx'] == Kaon_kaon.i1['vx']) & (Kaon_kaon.i0['vy'] == Kaon_kaon.i1['vy']) & (Kaon_kaon.i0['vz'] == Kaon_kaon.i1['vz']))
+      Kaon_kaon = Kaon_kaon[same_vtx_kaon_kaon]
+      output['cutflow']['same_vtx_kaon_kaon'] += Kaon_kaon.counts.sum()
+
+      Kaon_kaon = Kaon_kaon[(Kaon_kaon.mass < 1.04)]
+
+      Dsplus_rec = Kaon_kaon.cross(Pion)
+      output['cutflow']['dsplus_rec'] += Dsplus_rec.counts.sum()
+
+      Dsplus_rec_same_vtx = ( (Dsplus_rec.i0.i0['vx'] == Dsplus_rec.i1['vx']) & (Dsplus_rec.i0.i0['vy'] == Dsplus_rec.i1['vy']) & (Dsplus_rec.i0.i0['vz'] == Dsplus_rec.i1['vz']))
+      Dsplus_rec = Dsplus_rec[Dsplus_rec_same_vtx] 
+      output['cutflow']['dsplus_rec_same_vtx'] += Dsplus_rec.counts.sum()
+
+      Dsplus_mass_cut = ((Dsplus_rec.mass < 1.990) & (Dsplus_rec.mass > 1.930))
+      Dsplus_rec = Dsplus_rec[Dsplus_mass_cut]
+      output['cutflow']['Dsplus_mass_cut'] += Dsplus_rec.counts.sum()
+
+      ######################## End of Ds+ reconstructed selection ########################
 
       
       Dimuon = Muon.distincts()
@@ -211,6 +251,11 @@ class GenParticleProcessor(processor.ProcessorABC):
       output['Dplus_rec_pt'].fill(dataset=dataset, pt=Dplus_rec.pt.flatten())
       output['Dplus_rec_eta'].fill(dataset=dataset, eta=Dplus_rec.eta.flatten())
       output['Dplus_rec_phi'].fill(dataset=dataset, phi=Dplus_rec.phi.flatten())
+
+      output['Dsplus_rec_mass'].fill(dataset=dataset, mass=Dsplus_rec.mass.flatten())
+      output['Dsplus_rec_pt'].fill(dataset=dataset, pt=Dsplus_rec.pt.flatten())
+      output['Dsplus_rec_eta'].fill(dataset=dataset, eta=Dsplus_rec.eta.flatten())
+      output['Dsplus_rec_phi'].fill(dataset=dataset, phi=Dsplus_rec.phi.flatten())
       
       return output
 
