@@ -6,7 +6,7 @@ import numpy as np
 
 class GenParticleProcessor(processor.ProcessorABC):
    def __init__(self):
-      dataset_axis = hist.Cat("dataset", "Primary dataset")
+      dataset_axis = hist.Cat("dataset", "Process")
 
       Muon_lead_pt_axis = hist.Bin("pt", r"$p_{T,\mu}$ [GeV]", 3000, 0.25, 300)
       Muon_trail_pt_axis = hist.Bin("pt", r"$p_{T,\mu}$ [GeV]", 3000, 0.25, 300)
@@ -29,14 +29,24 @@ class GenParticleProcessor(processor.ProcessorABC):
       D0_rec_phi_axis = hist.Bin("phi", r"$\phi_{D^0}$", 70, -3.5, 3.5)
 
       Dplus_rec_mass_axis = hist.Bin("mass", r"$m_{D^+}$ [GeV]", 10, 1.86, 1.88)
-      Dplus_rec_pt_axis = hist.Bin("pt", r"$p_{T,D^0}$ [GeV]", 3000, 0.25, 300)
-      Dplus_rec_eta_axis = hist.Bin("eta", r"$\eta_{D^0}$", 100, -5.0, 5.0)
-      Dplus_rec_phi_axis = hist.Bin("phi", r"$\phi_{D^0}$", 70, -3.5, 3.5)
+      Dplus_rec_pt_axis = hist.Bin("pt", r"$p_{T,D^+}$ [GeV]", 3000, 0.25, 300)
+      Dplus_rec_eta_axis = hist.Bin("eta", r"$\eta_{D^+}$", 100, -5.0, 5.0)
+      Dplus_rec_phi_axis = hist.Bin("phi", r"$\phi_{D^+}$", 70, -3.5, 3.5)
 
       Dsplus_rec_mass_axis = hist.Bin("mass", r"$m_{D^+_s}$ [GeV]", 10, 1.86, 2.00)
       Dsplus_rec_pt_axis = hist.Bin("pt", r"$p_{T,D^+_s}$[GeV]" , 3000, 0.25, 300)
       Dsplus_rec_eta_axis = hist.Bin("eta", r"$\eta_{D^+_s}$", 100, -5.0, 5.0)
       Dsplus_rec_phi_axis = hist.Bin("phi", r"$\phi_{D^+_s}$", 70, -3.5, 3.5)
+
+      Dstarplus_rec_mass_axis = hist.Bin("mass", r"$m_{D^{*+}}$ [GeV]", 10, 1.86, 2.00)
+      Dstarplus_rec_pt_axis = hist.Bin("pt", r"$p_{T,D^{*+}}$[GeV]" , 3000, 0.25, 300)
+      Dstarplus_rec_eta_axis = hist.Bin("eta", r"$\eta_{D^{*+}s}$", 100, -5.0, 5.0)
+      Dstarplus_rec_phi_axis = hist.Bin("phi", r"$\phi_{D^{*+}}$", 70, -3.5, 3.5)
+
+      Lambdacplus_rec_mass_axis = hist.Bin("mass", r"$m_{\Lambda_c^+}$ [GeV]", 10, 2.00, 2.20)
+      Lambdacplus_rec_pt_axis = hist.Bin("pt", r"$p_{T,\Lambda_c^+}$[GeV]" , 3000, 0.25, 300)
+      Lambdacplus_rec_eta_axis = hist.Bin("eta", r"$\eta_{\Lambda_c^+}$", 100, -5.0, 5.0)
+      Lambdacplus_rec_phi_axis = hist.Bin("phi", r"$\phi_{\Lambda_c^+}$", 70, -3.5, 3.5)
       
       self._accumulator = processor.dict_accumulator({
          'Muon_lead_pt': hist.Hist("Counts", dataset_axis, Muon_lead_pt_axis),
@@ -63,6 +73,14 @@ class GenParticleProcessor(processor.ProcessorABC):
          'Dsplus_rec_pt': hist.Hist("Counts", dataset_axis, Dsplus_rec_pt_axis),
          'Dsplus_rec_eta': hist.Hist("Counts", dataset_axis, Dsplus_rec_eta_axis),
          'Dsplus_rec_phi': hist.Hist("Counts", dataset_axis, Dsplus_rec_phi_axis),
+         'Dstarplus_rec_mass': hist.Hist("Counts", dataset_axis, Dstarplus_rec_mass_axis),
+         'Dstarplus_rec_pt': hist.Hist("Counts", dataset_axis, Dstarplus_rec_pt_axis),
+         'Dstarplus_rec_eta': hist.Hist("Counts", dataset_axis, Dstarplus_rec_eta_axis),
+         'Dstarplus_rec_phi': hist.Hist("Counts", dataset_axis, Dstarplus_rec_phi_axis),
+         'Lambdacplus_rec_mass': hist.Hist("Counts", dataset_axis, Lambdacplus_rec_mass_axis),
+         'Lambdacplus_rec_pt': hist.Hist("Counts", dataset_axis, Lambdacplus_rec_pt_axis),
+         'Lambdacplus_rec_eta': hist.Hist("Counts", dataset_axis, Lambdacplus_rec_eta_axis),
+         'Lambdacplus_rec_phi': hist.Hist("Counts", dataset_axis, Lambdacplus_rec_phi_axis),
          'cutflow': processor.defaultdict_accumulator(int),
       })
     
@@ -111,6 +129,9 @@ class GenParticleProcessor(processor.ProcessorABC):
                )
 
       # Particle selection
+      protonid = (np.absolute(GenPart.pdgId) == 2212)
+      Proton = GenPart[protonid]
+
       muonid = (np.absolute(GenPart.pdgId) == 13)
       Muon = GenPart[muonid]
 
@@ -125,7 +146,10 @@ class GenParticleProcessor(processor.ProcessorABC):
 
       ########################## D0 reconstructed selection ##########################
 
-      D0_rec = Kaon.cross(Pion)
+      #Take non slow pions
+      Pion_not_slow = Pion[Pion['__fast_pt'] > 0.3] 
+      output['cutflow']['Non Slow Pion'] += Pion_not_slow.counts.sum()
+      D0_rec = Kaon.cross(Pion_not_slow)
 
       opposite_charge_D0 = (D0_rec.i0['charge'] * D0_rec.i1['charge'] < 0)
       D0_rec = D0_rec[opposite_charge_D0]
@@ -188,7 +212,7 @@ class GenParticleProcessor(processor.ProcessorABC):
       Dsplus_rec = Kaon_kaon.cross(Pion)
       output['cutflow']['dsplus_rec'] += Dsplus_rec.counts.sum()
 
-      Dsplus_rec_same_vtx = ( (Dsplus_rec.i0.i0['vx'] == Dsplus_rec.i1['vx']) & (Dsplus_rec.i0.i0['vy'] == Dsplus_rec.i1['vy']) & (Dsplus_rec.i0.i0['vz'] == Dsplus_rec.i1['vz']))
+      Dsplus_rec_same_vtx = ((Dsplus_rec.i0.i0['vx'] == Dsplus_rec.i1['vx']) & (Dsplus_rec.i0.i0['vy'] == Dsplus_rec.i1['vy']) & (Dsplus_rec.i0.i0['vz'] == Dsplus_rec.i1['vz']))
       Dsplus_rec = Dsplus_rec[Dsplus_rec_same_vtx] 
       output['cutflow']['dsplus_rec_same_vtx'] += Dsplus_rec.counts.sum()
 
@@ -198,7 +222,55 @@ class GenParticleProcessor(processor.ProcessorABC):
 
       ######################## End of Ds+ reconstructed selection ########################
 
+      ########################  D*+ reconstructed selection ##############################
+
+      # Take slow pions
+      Pion_slow = Pion[Pion['__fast_pt'] < 0.3]
+      output['cutflow']['Pion Slow'] += Pion_slow.counts.sum()
+
+      Dstarplus_rec = D0_rec.cross(Pion_slow)
+      output['cutflow']['Dstarplus_rec bare'] += Dstarplus_rec.counts.sum()
+
+      Dstarplus_rec_same_vtx = ((Dstarplus_rec.i0.i0['vx'] == Dstarplus_rec.i1['vx']) & (Dstarplus_rec.i0.i0['vy'] == Dstarplus_rec.i1['vy']) & (Dstarplus_rec.i0.i0['vz'] == Dstarplus_rec.i1['vz']))
+      Dstarplus_rec = Dstarplus_rec[Dstarplus_rec_same_vtx]
+      output['cutflow']['Dstarplus_rec_same_vtx'] += Dstarplus_rec.counts.sum()
+
+      Dstarplus_mass_cut = ((Dstarplus_rec.mass < 2.036) & (Dstarplus_rec.mass > 1.970))
+      Dstarplus_rec = Dstarplus_rec[Dstarplus_mass_cut]
+      output['cutflow']['Dstarplus_mass_cut'] += Dstarplus_rec.counts.sum()
+
+      ######################## End of D*+ reconstructed selection ########################
+
+      ########################  Lambda_c+ reconstructed selection ##############################
+
+      Proton_kaon = Proton.cross(Kaon)
+      output['cutflow']['Proton_Kaon'] += Proton_kaon.counts.sum()
+
+      Proton_kaon_opposite_charge = (Proton_kaon.i0['charge'] * Proton_kaon.i1['charge'] < 0)
+      Proton_kaon = Proton_kaon[Proton_kaon_opposite_charge]
+      output['cutflow']['Proton_kaon_opposite_charge'] += Proton_kaon.counts.sum()
+
+      Proton_kaon_same_vtx = ((Proton_kaon.i0['vx'] == Proton_kaon.i1['vx']) & (Proton_kaon.i0['vy'] == Proton_kaon.i1['vy']) & (Proton_kaon.i0['vz'] == Proton_kaon.i1['vz']))
+      Proton_kaon = Proton_kaon[Proton_kaon_same_vtx]     
+      output['cutflow']['Proton_kaon_same_vtx'] += Proton_kaon.counts.sum() 
+
+      Lambda_cplus = Proton_kaon.cross(Pion) 
+      output['cutflow']['Lambda_cplus'] += Lambda_cplus.counts.sum() 
+
+      Lambda_cplus_same_vtx = ((Lambda_cplus.i0.i0['vx'] == Lambda_cplus.i1['vx']) & (Lambda_cplus.i0.i0['vy'] == Lambda_cplus.i1['vy']) & (Lambda_cplus.i0.i0['vz'] == Lambda_cplus.i1['vz']))
+      Lambda_cplus = Lambda_cplus[Lambda_cplus_same_vtx]
+      output['cutflow']['Lambda_cplus_same_vtx'] += Lambda_cplus.counts.sum()
+
+      #Lambda_cplus_pt_cut = Lambda_cplus[Lambda_cplus.pt > 0.5]
+      #Lambda_cplus = Lambda_cplus[Lambda_cplus_pt_cut]
+      #output['cutflow']['Lambda_cplus_pt_cut'] += Lambda_cplus.counts.sum()
+
+      Lambda_cplus_mass_cut = ((Lambda_cplus.mass < 2.1) & (Lambda_cplus.mass > 2.3))
+      Lambda_cplus_rec = Lambda_cplus[Lambda_cplus_mass_cut]
+      output['cutflow']['Lambda_cplus_mass_cut'] += Lambda_cplus_rec.counts.sum() 
       
+
+      ######## 
       Dimuon = Muon.distincts()
       
       opposite_charge = (Dimuon.i0['charge'] * Dimuon.i1['charge'] < 0)
@@ -256,6 +328,16 @@ class GenParticleProcessor(processor.ProcessorABC):
       output['Dsplus_rec_pt'].fill(dataset=dataset, pt=Dsplus_rec.pt.flatten())
       output['Dsplus_rec_eta'].fill(dataset=dataset, eta=Dsplus_rec.eta.flatten())
       output['Dsplus_rec_phi'].fill(dataset=dataset, phi=Dsplus_rec.phi.flatten())
+
+      output['Dstarplus_rec_mass'].fill(dataset=dataset, mass=Dstarplus_rec.mass.flatten())
+      output['Dstarplus_rec_pt'].fill(dataset=dataset, pt=Dstarplus_rec.pt.flatten())
+      output['Dstarplus_rec_eta'].fill(dataset=dataset, eta=Dstarplus_rec.eta.flatten())
+      output['Dstarplus_rec_phi'].fill(dataset=dataset, phi=Dstarplus_rec.phi.flatten())
+
+      output['Lambdacplus_rec_mass'].fill(dataset=dataset, mass=Lambda_cplus_rec.mass.flatten())
+      output['Lambdacplus_rec_pt'].fill(dataset=dataset, pt=Lambda_cplus_rec.pt.flatten())
+      output['Lambdacplus_rec_eta'].fill(dataset=dataset, eta=Lambda_cplus_rec.eta.flatten())
+      output['Lambdacplus_rec_phi'].fill(dataset=dataset, phi=Lambda_cplus_rec.phi.flatten())
       
       return output
 
