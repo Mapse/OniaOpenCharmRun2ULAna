@@ -155,7 +155,7 @@ class GenParticleProcessor(processor.ProcessorABC):
       D0_rec = D0_rec[opposite_charge_D0]
       output['cutflow']['opposite_charge_D0'] += D0_rec.counts.sum()
 
-      same_vtx_D0 = ((D0_rec.i0['vx'] == D0_rec.i1['vx']) | (D0_rec.i0['vy'] == D0_rec.i1['vy']) | (D0_rec.i0['vz'] == D0_rec.i1['vz']))
+      same_vtx_D0 = ((D0_rec.i0['vx'] == D0_rec.i1['vx']) & (D0_rec.i0['vy'] == D0_rec.i1['vy']) & (D0_rec.i0['vz'] == D0_rec.i1['vz']))
       D0_rec = D0_rec[same_vtx_D0]
       output['cutflow']['same_vtx_D0'] += D0_rec.counts.sum()
 
