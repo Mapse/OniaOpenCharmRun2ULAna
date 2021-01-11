@@ -2,7 +2,7 @@ name: OniaOpenCharmRun2ULenv
 channels:
   - conda-forge
 dependencies:
-  - python == 3.8
+  - python == 3.7
   - xrootd
   - pip
   - matplotlib
@@ -10,6 +10,7 @@ dependencies:
   - jupyterlab >=2
   - uncertainties
   - nodejs
+  - zfit
   - pip:
     - coffea
     - hist >=2.0.0a5

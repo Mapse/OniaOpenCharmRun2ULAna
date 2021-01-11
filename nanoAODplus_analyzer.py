@@ -20,12 +20,14 @@ parser.add_argument("-a","--analyze", help="Do the full analysis chain", action=
 args = parser.parse_args()
 
 if (args.select or args.analyze):
-    config_yaml = yaml.load(open("config/onecore.yaml", "r"), Loader=yaml.FullLoader)
+    config_yaml = yaml.load(open("config/multicore.yaml", "r"), Loader=yaml.FullLoader)
 
     tstart = time.time()
+    
+    files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][:100]}
 
-
-    files = {'MuOnia2017MINIAOD': filesets['MuOnia2017MINIAOD'][0:1]}
+    #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][:100]}
+    #files = {'JPSIDZERO2017MC': filesets['JPSIDZERO2017MC'][:310]}
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)
