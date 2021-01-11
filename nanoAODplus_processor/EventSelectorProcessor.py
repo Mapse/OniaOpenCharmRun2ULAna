@@ -22,6 +22,9 @@ class EventSelectorProcessor(processor.ProcessorABC):
     def process(self, df):
         output = self.accumulator.identity()
 
+        #if len(df) == 0:
+            #continue
+
         # Dimu candidates
         if df['nDimu'].size != 0:
             Dimu = JaggedCandidateArray.candidatesfromcounts(
@@ -84,7 +87,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Dimu = Dimu[Dimu.charge == 0]
         output['cutflow']['Dimu 0 charge'] += Dimu.counts.sum()
 
-        dimu_mass_cut = (Dimu.mass > 8.5) & (Dimu.mass < 11.5)
+        dimu_mass_cut = (Dimu.mass > 2.95) & (Dimu.mass < 3.25)
         Dimu = Dimu[dimu_mass_cut]
         output['cutflow']['Upsilon mass'] += Dimu.counts.sum()
 

@@ -94,7 +94,7 @@ class HistogramingProcessor(processor.ProcessorABC):
                                  bh.axis.Regular(80, -2.5, 2.5, metadata=r"$\eta_{\mu^+\mu^-}$"),
                                  bh.axis.Regular(70, -3.5, 3.5, metadata=r"$\phi_{\mu^+\mu^-}$"),)
 
-        hist_dimu_mass = bh.Histogram(bh.axis.Regular(100, 8.6, 11, metadata=r"$m_{\mu^+\mu^-}$ [GeV]"))
+        hist_dimu_mass = bh.Histogram(bh.axis.Regular(100, 2.95, 3.25, metadata=r"$m_{\mu^+\mu^-}$ [GeV]"))
 
         # D0
         hist_D0 = bh.Histogram(bh.axis.Regular(100, 0, 50, metadata=r"$p_{T,D^0}$ [GeV]"),
