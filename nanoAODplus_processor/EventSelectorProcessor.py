@@ -1,4 +1,4 @@
-import awkward1 as ak
+import awkward as ak
 import coffea.processor as processor
 from coffea.util import save
 
