@@ -6,7 +6,7 @@ dependencies:
   - xrootd
   - pip
   - matplotlib
-  - boost-histogram >=0.10.0
+  - root
   - jupyterlab >=2
   - uncertainties
   - nodejs

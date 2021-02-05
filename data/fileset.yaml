@@ -17,6 +17,12 @@ charmonium_test:
       year: "2017"
       path: 
         - "data/path/Charmonium/CharmoniumMINIAODpath.txt"
+    
+    - primary_dataset: "Charmonium"
+      datatier: "AOD"
+      year: "2018"
+      path:
+        - "data/path/Charmonium/Charmonium_path_2018B.txt"
 
 # muonia_test
 muonia_test:
@@ -58,8 +64,8 @@ local_test:
       - data/path/local_test/Charmonium_path.txt 
 
 MC:
-  - primary_dataset: "UpsilonToMuMu"
+  - primary_dataset: "MonteCarlo"
     datatier: "AOD"
-    year: "test"
+    year: "2017"
     path:
-    - data/path/MC/UpsilonToMuMu_path.txt
+    - data/path/MonteCarlo/JpsiDstar_2017.txt
