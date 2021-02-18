@@ -1,0 +1,108 @@
+[#1] INFO:Minization -- RooMinimizer::optimizeConst: activating const optimization
+[#1] INFO:Minization --  The following expressions will be evaluated in cache-and-track mode: (gauss,Third degree polynomial)
+ **********
+ **    1 **SET PRINT           1
+ **********
+ **********
+ **    2 **SET NOGRAD
+ **********
+ PARAMETER DEFINITIONS:
+    NO.   NAME         VALUE      STEP SIZE      LIMITS
+     1 frac signal   2.00000e-01  1.00000e-01    0.00000e+00  1.00000e+00
+     2 mean         1.86400e+00  6.00000e-03    1.83000e+00  1.89000e+00
+     3 p0           7.80000e+01  5.00000e+00    5.00000e+01  1.00000e+02
+     4 p1          -1.50000e+01  1.00000e+00   -2.00000e+01 -1.00000e+01
+     5 p2          -9.00000e+00  1.00000e+00   -1.50000e+01 -5.00000e+00
+     6 sigma        1.10000e-02  5.49500e-03    1.00000e-05  9.99000e-01
+ **********
+ **    3 **SET ERR         0.5
+ **********
+ **********
+ **    4 **SET PRINT           1
+ **********
+ **********
+ **    5 **SET STR           1
+ **********
+ NOW USING STRATEGY  1: TRY TO BALANCE SPEED AGAINST RELIABILITY
+ **********
+ **    6 **MIGRAD        3000           1
+ **********
+ FIRST CALL TO USER FUNCTION AT NEW START POINT, WITH IFLAG=4.
+ START MIGRAD MINIMIZATION.  STRATEGY  1.  CONVERGENCE WHEN EDM .LT. 1.00e-03
+ FCN=-199363 FROM MIGRAD    STATUS=INITIATE       24 CALLS          25 TOTAL
+                     EDM= unknown      STRATEGY= 1      NO ERROR MATRIX       
+  EXT PARAMETER               CURRENT GUESS       STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  frac signal   2.00000e-01   1.00000e-01   2.57889e-01   1.27134e+04
+   2  mean         1.86400e+00   6.00000e-03   2.03277e-01  -2.06242e+02
+   3  p0           7.80000e+01   5.00000e+00   2.02908e-01   4.87624e+01
+   4  p1          -1.50000e+01   1.00000e+00   2.01358e-01   2.32922e+01
+   5  p2          -9.00000e+00   1.00000e+00   2.05758e-01   4.57470e+01
+   6  sigma        1.10000e-02   5.49500e-03   5.45809e-02  -3.09184e+04
+                               ERR DEF= 0.5
+ MIGRAD MINIMIZATION HAS CONVERGED.
+ MIGRAD WILL VERIFY CONVERGENCE AND ERROR MATRIX.
+ COVARIANCE MATRIX CALCULATED SUCCESSFULLY
+ FCN=-200930 FROM MIGRAD    STATUS=CONVERGED     149 CALLS         150 TOTAL
+                     EDM=0.000410324    STRATEGY= 1      ERROR MATRIX ACCURATE 
+  EXT PARAMETER                                   STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  frac signal   1.11410e-01   2.00518e-03   1.61594e-03   2.93906e-01
+   2  mean         1.86431e+00   2.18570e-04   2.26237e-03   6.31150e-01
+   3  p0           7.82005e+01   1.74163e+00   4.96104e-03  -2.62955e-01
+   4  p1          -1.49617e+01   8.09634e-01   1.08486e-02  -4.96261e-02
+   5  p2          -8.97254e+00   3.79636e-01   5.04697e-03  -3.82752e-01
+   6  sigma        1.19525e-02   2.31444e-04   5.41389e-04  -2.38217e+00
+                               ERR DEF= 0.5
+ EXTERNAL ERROR MATRIX.    NDIM=  25    NPAR=  6    ERR DEF=0.5
+  4.021e-06 -1.142e-08 -1.890e-05 -2.082e-05  1.493e-06  2.656e-07 
+ -1.142e-08  4.777e-08 -3.484e-06 -1.525e-06 -7.115e-07 -1.371e-09 
+ -1.890e-05 -3.484e-06  3.038e+00 -6.158e-01 -3.177e-01 -1.670e-06 
+ -2.082e-05 -1.525e-06 -6.158e-01  6.613e-01 -1.726e-01 -1.678e-06 
+  1.493e-06 -7.115e-07 -3.177e-01 -1.726e-01  1.444e-01  6.324e-08 
+  2.656e-07 -1.371e-09 -1.670e-06 -1.678e-06  6.324e-08  5.357e-08 
+ PARAMETER  CORRELATION COEFFICIENTS  
+       NO.  GLOBAL      1      2      3      4      5      6
+        1  0.57405   1.000 -0.026 -0.005 -0.013  0.002  0.572
+        2  0.12439  -0.026  1.000 -0.009 -0.009 -0.009 -0.027
+        3  0.97367  -0.005 -0.009  1.000 -0.434 -0.480 -0.004
+        4  0.97651  -0.013 -0.009 -0.434  1.000 -0.559 -0.009
+        5  0.97772   0.002 -0.009 -0.480 -0.559  1.000  0.001
+        6  0.57270   0.572 -0.027 -0.004 -0.009  0.001  1.000
+ **********
+ **    7 **SET ERR         0.5
+ **********
+ **********
+ **    8 **SET PRINT           1
+ **********
+ **********
+ **    9 **HESSE        3000
+ **********
+ COVARIANCE MATRIX CALCULATED SUCCESSFULLY
+ FCN=-200930 FROM HESSE     STATUS=OK             40 CALLS         190 TOTAL
+                     EDM=0.00862414    STRATEGY= 1      ERROR MATRIX ACCURATE 
+  EXT PARAMETER                                INTERNAL      INTERNAL  
+  NO.   NAME      VALUE            ERROR       STEP SIZE       VALUE   
+   1  frac signal   1.11410e-01   2.00814e-03   6.46376e-05  -8.90173e-01
+   2  mean         1.86431e+00   2.18570e-04   4.52473e-04   1.44113e-01
+   3  p0           7.82005e+01   8.40906e+00   1.98441e-04   1.28372e-01
+   4  p1          -1.49617e+01   3.59120e+00   4.33943e-04   7.66895e-03
+   5  p2          -8.97254e+00   1.83459e+00   2.01879e-04   2.06966e-01
+   6  sigma        1.19525e-02   2.31700e-04   2.16556e-05  -1.35168e+00
+                               ERR DEF= 0.5
+ EXTERNAL ERROR MATRIX.    NDIM=  25    NPAR=  6    ERR DEF=0.5
+  4.033e-06 -1.167e-08 -7.642e-06 -3.055e-04  1.290e-04  2.669e-07 
+ -1.167e-08  4.777e-08 -3.378e-06 -4.945e-07 -1.169e-06 -1.521e-09 
+ -7.642e-06 -3.378e-06  7.360e+01 -1.507e+01 -7.905e+00 -7.956e-07 
+ -3.055e-04 -4.945e-07 -1.507e+01  1.605e+01 -4.277e+00 -2.316e-05 
+  1.290e-04 -1.169e-06 -7.905e+00 -4.277e+00  3.536e+00  9.684e-06 
+  2.669e-07 -1.521e-09 -7.956e-07 -2.316e-05  9.684e-06  5.368e-08 
+ PARAMETER  CORRELATION COEFFICIENTS  
+       NO.  GLOBAL      1      2      3      4      5      6
+        1  0.57577   1.000 -0.027 -0.000 -0.038  0.034  0.574
+        2  0.12438  -0.027  1.000 -0.002 -0.001 -0.003 -0.030
+        3  0.99893  -0.000 -0.002  1.000 -0.438 -0.490 -0.000
+        4  0.99904  -0.038 -0.001 -0.438  1.000 -0.568 -0.025
+        5  0.99910   0.034 -0.003 -0.490 -0.568  1.000  0.022
+        6  0.57399   0.574 -0.030 -0.000 -0.025  0.022  1.000
+[#1] INFO:Minization -- RooMinimizer::optimizeConst: deactivating const optimization
