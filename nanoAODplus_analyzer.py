@@ -26,7 +26,8 @@ if (args.select or args.analyze):
     tstart = time.time()
 
 
-    files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][:]}
+    files = {'Charmonium2017_2018AOD': filesets['Charmonium2017_2018AOD'][:]}
+    #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][1:100]}
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)
@@ -36,8 +37,8 @@ if (args.select or args.analyze):
         output = processor.run_uproot_job(files,
                                         treename='Events',
                                         processor_instance=EventSelectorProcessor(args.name),
-                                        executor=processor.futures_executor,
-                                        executor_args={"schema": BaseSchema, 'workers': config_yaml['n_cores']},
+                                        executor=processor.futures_executor, # Uses python futures to multiprocessing
+                                        executor_args={"schema": BaseSchema, 'workers': config_yaml['n_cores']}, # BaseSchema returns a base.nano-events object
                                         chunksize=config_yaml['chunksize'],
                                         )
 

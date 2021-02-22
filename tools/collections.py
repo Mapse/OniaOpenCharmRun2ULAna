@@ -21,6 +21,7 @@ dstar_cols = ['Dstar_pt', 'Dstar_eta', 'Dstar_phi', 'Dstar_rap', 'Dstar_deltam',
               'Dstarpis_pt', 'Dstarpis_eta', 'Dstarpis_phi', 'Dstarpis_vtxIdx', 'Dstarpis_chindof', 'Dstarpis_nValid', 'Dstarpis_nPix',
               'Dstarpis_dxy', 'Dstarpis_dz',]
 
+primary_vertex_cols = ['PV_chi2', 'PV_ndof', 'PV_npvs', 'PV_npvsGood', 'PV_score', 'PV_x', 'PV_y', 'PV_z']
 
 def get_vars_dict(events, col_list):
     dict = {}
@@ -36,6 +37,9 @@ def get_vars_dict(events, col_list):
             if col.startswith('_'): col = col[1:]
         elif c.startswith('Dstar'):
             col = c[5:]
+            if col.startswith('_'): col = col[1:]
+        elif c.startswith('PV'):
+            col = c[2:]
             if col.startswith('_'): col = col[1:]
         else:
             Exception('Not good!')

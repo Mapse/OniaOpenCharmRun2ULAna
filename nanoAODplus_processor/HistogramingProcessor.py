@@ -159,7 +159,7 @@ class HistogramingProcessor(processor.ProcessorABC):
                                     hist.Bin("phi", "$\phi_{\mu^+\mu^-}$", 70, -3.5, 3.5)),
                 'Jpsi_rap': hist.Hist("Events", hist.Bin("rap", "y", 60, -2.5, 2.5)),
                 'JpsiDstar_deltarap': hist.Hist("Events", hist.Bin("deltarap", "$\Delta y$", 50, -5, 5)),
-                'JpsiDstar_mass': hist.Hist("Events", hist.Bin("mass", "$m_{J/\psi D*}$ [GeV]", 100, 0, 20)),
+                'JpsiDstar_mass': hist.Hist("Events", hist.Bin("mass", "$m_{J/\psi D*}$ [GeV]", 100, 0, 100)),
                 'Dstar_p': hist.Hist("Events",
                                  hist.Cat("chg", "charge"), 
                                  hist.Bin("pt", "$p_{T,D*}$ [GeV]", 100, 0, 50),

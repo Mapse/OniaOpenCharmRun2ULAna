@@ -24,6 +24,19 @@ charmonium_test:
       path:
         - "data/path/Charmonium/Charmonium_path_2018B.txt"
 
+    - primary_dataset: "Charmonium"
+      datatier: "AOD"
+      year: "2017_2018"
+      path:
+        - "data/path/Charmonium/CharmoniumAOD0000path.txt"
+        - "data/path/Charmonium/CharmoniumAOD0001path.txt"
+        - "data/path/Charmonium/CharmoniumAOD0002path.txt"
+        - "data/path/Charmonium/CharmoniumAOD0003path.txt"
+        - "data/path/Charmonium/CharmoniumAOD0004path.txt"
+        - "data/path/Charmonium/CharmoniumAOD0005path.txt"
+        - "data/path/Charmonium/CharmoniumAOD0006path.txt"
+        - "data/path/Charmonium/Charmonium_path_2018B.txt"
+
 # muonia_test
 muonia_test:
     - primary_dataset: "MuOnia"
