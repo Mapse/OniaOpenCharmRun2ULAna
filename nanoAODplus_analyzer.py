@@ -26,8 +26,11 @@ if (args.select or args.analyze):
     tstart = time.time()
 
 
-    files = {'Charmonium2017_2018AOD': filesets['Charmonium2017_2018AOD'][:]}
-    #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][1:100]}
+    files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][1:45]}
+    #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][1:15]}
+    #files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:]}
+
+    
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)

@@ -11,6 +11,7 @@ from tools.collections import *
 
 D0_PDG_MASS = 1.864
 
+loose = 1
 
 def association(cand1, cand2):
     ''' Function for association of the particles. The cuts that operates on all of them and 
@@ -56,6 +57,9 @@ class EventSelectorProcessor(processor.ProcessorABC):
         # test if there is any events in the file
         if len(events) == 0:
             return output
+
+        ############### Get the main primary vertex properties ############### 
+        Primary_vertex = ak.zip({**get_vars_dict(events, primary_vertex_cols)})
         
         ############### Get All the interesting candidates from NTuples
         Dimu = ak.zip({**get_vars_dict(events, dimu_cols)}, with_name="PtEtaPhiMCandidate")
@@ -80,7 +84,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         
         # Prompt cut for jpsi
         dimuon_prompt_cut = (Dimu.dlSig > 0) & (Dimu.dlSig < 2.5)
-        Dimu = Dimu[dimuon_prompt_cut]
+        #Dimu = Dimu[dimuon_prompt_cut]
         output['cutflow']['Dimu prompt'] += ak.sum(ak.num(Dimu))
 
         ############### Get the Muons from Dimu, for cuts in their params
@@ -98,7 +102,13 @@ class EventSelectorProcessor(processor.ProcessorABC):
         output['cutflow']['Dimu muon global'] += ak.sum(ak.num(Dimu))
 
         # pt and eta cuts
-        muon_pt_cut = (Muon.slot0.pt > 3) & (Muon.slot1.pt > 3)
+        if loose:
+            muon_pt_cut = (Muon.slot0.pt > 1) & (Muon.slot1.pt > 1)
+
+        else:
+            
+            muon_pt_cut = (Muon.slot0.pt > 3) & (Muon.slot1.pt > 3)
+        
         Dimu = Dimu[muon_pt_cut]
         Muon = Muon[muon_pt_cut]
         output['cutflow']['Dimu muon pt cut'] += ak.sum(ak.num(Dimu))
@@ -115,27 +125,55 @@ class EventSelectorProcessor(processor.ProcessorABC):
         D0 = D0[~D0.hasMuon]
         output['cutflow']['D0 trk muon cut'] += ak.sum(ak.num(D0))
 
-        D0 = D0[(D0.t1_pt > 0.8) & (D0.t2_pt > 0.8)]
-        output['cutflow']['D0 trk pt cut'] += ak.sum(ak.num(D0))
+        if loose:
+            D0 = D0[(D0.t1_pt > 0.4) & (D0.t2_pt > 0.4)]
+            output['cutflow']['D0 trk pt cut'] += ak.sum(ak.num(D0))
 
-        D0 = D0[(D0.t1_chindof < 2.5) & (D0.t2_chindof < 2.5)]
-        output['cutflow']['D0 trk chi2 cut'] += ak.sum(ak.num(D0))
+            D0 = D0[(D0.t1_chindof < 4) & (D0.t2_chindof < 4)]
+            output['cutflow']['D0 trk chi2 cut'] += ak.sum(ak.num(D0))
 
-        D0 = D0[(D0.t1_nValid > 4) & (D0.t2_nValid > 4) & (D0.t1_nPix > 1) & (D0.t2_nPix > 1)]
-        output['cutflow']['D0 trk hits cut'] += ak.sum(ak.num(D0))
+            D0 = D0[(D0.t1_nValid > 2) & (D0.t2_nValid > 2) & (D0.t1_nPix > 1) & (D0.t2_nPix > 1)]
+            output['cutflow']['D0 trk hits cut'] += ak.sum(ak.num(D0))
 
-        D0 = D0[(D0.t1_dxy < 0.1) & (D0.t2_dxy < 0.1)]
-        output['cutflow']['D0 trk dxy cut'] += ak.sum(ak.num(D0))
+            D0 = D0[(D0.t1_dxy < 0.1) & (D0.t2_dxy < 0.1)]
+            output['cutflow']['D0 trk dxy cut'] += ak.sum(ak.num(D0))
 
-        D0 = D0[(D0.t1_dz < 1.) & (D0.t2_dz < 1.)]
-        output['cutflow']['D0 trk dz cut'] += ak.sum(ak.num(D0))
+            D0 = D0[(D0.t1_dz < 1.) & (D0.t2_dz < 1.)]
+            output['cutflow']['D0 trk dz cut'] += ak.sum(ak.num(D0))
+        
+        else:
+            
+
+            D0 = D0[(D0.t1_pt > 0.8) & (D0.t2_pt > 0.8)]
+            output['cutflow']['D0 trk pt cut'] += ak.sum(ak.num(D0))
+
+            D0 = D0[(D0.t1_chindof < 2.5) & (D0.t2_chindof < 2.5)]
+            output['cutflow']['D0 trk chi2 cut'] += ak.sum(ak.num(D0))
+
+            D0 = D0[(D0.t1_nValid > 4) & (D0.t2_nValid > 4) & (D0.t1_nPix > 1) & (D0.t2_nPix > 1)]
+            output['cutflow']['D0 trk hits cut'] += ak.sum(ak.num(D0))
+
+            D0 = D0[(D0.t1_dxy < 0.1) & (D0.t2_dxy < 0.1)]
+            output['cutflow']['D0 trk dxy cut'] += ak.sum(ak.num(D0))
+
+            D0 = D0[(D0.t1_dz < 1.) & (D0.t2_dz < 1.)]
+            output['cutflow']['D0 trk dz cut'] += ak.sum(ak.num(D0))
 
         # D0 cosphi
-        D0 = D0[D0.cosphi > 0.99]
+        if loose:
+            D0 = D0[D0.cosphi > 0.1]
+
+        else:
+
+            D0 = D0[D0.cosphi > 0.99]
         output['cutflow']['D0 cosphi cut'] += ak.sum(ak.num(D0))
 
         # D0 dl Significance
-        D0 = D0[D0.dlSig > 5.]
+        if loose:
+            D0 = D0[D0.dlSig > 5.]
+        else:
+
+            D0 = D0[D0.dlSig > 5.]
         output['cutflow']['D0 dlSig cut'] += ak.sum(ak.num(D0))
 
         # D0 pt
@@ -204,11 +242,21 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Muon_trail = ak.where(~leading_mu, Muon.slot0, Muon.slot1)
 
         ############### Create the accumulators to save output
+        primary_vertex_acc = processor.dict_accumulator({})
+        for var in Primary_vertex.fields:
+            #print(primary_vertex_acc[var])
+            
+            primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(Primary_vertex[var]))
+        #primary_vertex_acc["nPrimaryVertex"] = processor.column_accumulator(ak.to_numpy(ak.num(Primary_vertex)))
+        output["Primary_vertex"] = primary_vertex_acc
+        
+
         muon_lead_acc = processor.dict_accumulator({})
         for var in Muon_lead.fields:
             muon_lead_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Muon_lead[var])))
         muon_lead_acc["nMuon"] = processor.column_accumulator(ak.to_numpy(ak.num(Muon_lead)))
         output["Muon_lead"] = muon_lead_acc
+        
 
         muon_trail_acc = processor.dict_accumulator({})
         for var in Muon_trail.fields:

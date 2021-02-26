@@ -16,6 +16,7 @@ class HistogramingProcessor(processor.ProcessorABC):
         self.analyzer_name = analyzer_name
         
         self._accumulator = processor.dict_accumulator({
+            'Primary_vertex_npvs': hist.Hist("Events", hist.Bin("npvs", "Num reconstructed vertex", 50, 0, 100)), 
             'Muon_lead_p': hist.Hist("Events", 
                                    hist.Bin("pt", "$p_{T,\mu}$ [GeV]", 100, 0, 50),
                                    hist.Bin("eta", "$\eta_{\mu}$", 60, -2.5, 2.5),
@@ -193,10 +194,14 @@ class HistogramingProcessor(processor.ProcessorABC):
         Dstar_acc = acc['Dstar']
         Dstar_trk_acc = acc['Dstar_trk']
         DimuDstar_acc = acc['DimuDstar']
+        Primary_vertex_acc = acc['Primary_vertex']
 
         DimuDstar_p4 = build_p4(DimuDstar_acc)
+        
 
         ########## Filling histograms
+        # Primary vertex
+        output['Primary_vertex_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value),
         #Muon
         output['Muon_lead_p'].fill(pt=Muon_lead_acc['pt'].value,
                                    eta=Muon_lead_acc['eta'].value,
