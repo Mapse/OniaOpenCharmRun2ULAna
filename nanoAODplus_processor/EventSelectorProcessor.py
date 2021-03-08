@@ -85,12 +85,12 @@ class EventSelectorProcessor(processor.ProcessorABC):
         # Prompt/nomprompt cut for jpsi
         dimuon_prompt_cut = (Dimu.dlSig > 0) & (Dimu.dlSig < 2.5)
         dimuon_nonprompt_cut = (Dimu.dlSig > 4) 
-        Dimu = Dimu[dimuon_nonprompt_cut]
-        output['cutflow']['Dimu prompt'] += ak.sum(ak.num(Dimu))
+        #Dimu = Dimu[dimuon_nonprompt_cut]
+        #output['cutflow']['Dimu prompt'] += ak.sum(ak.num(Dimu))
 
         # Pointing angle cut for jpsi
         dimuon_pointing_cut = (Dimu.cosphi > 0.99)
-        Dimu = Dimu[dimuon_pointing_cut]
+        #Dimu = Dimu[dimuon_pointing_cut]
 
         ############### Get the Muons from Dimu, for cuts in their params
         Muon = ak.zip({'0': Muon[Dimu.t1_muIdx], '1': Muon[Dimu.t2_muIdx]})
@@ -124,7 +124,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         output['cutflow']['Dimu muon eta cut'] += ak.sum(ak.num(Dimu))
 
         Dimu['is_ups'] = (Dimu.mass > 8.5) & (Dimu.mass < 11.5)
-        Dimu['is_jpsi'] = (Dimu.mass > 2.95) & (Dimu.mass < 3.25)
+        Dimu['is_jpsi'] = (Dimu.mass > 2.9) & (Dimu.mass < 3.33)
 
         ############### Cuts for D0
         D0 = D0[~D0.hasMuon]
