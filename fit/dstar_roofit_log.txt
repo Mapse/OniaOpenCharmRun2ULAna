@@ -1,0 +1,124 @@
+[#1] INFO:NumericIntegration -- RooRealIntegral::init(Phen thrs func_Int[mass]) using numeric integrator RooIntegrator1D to calculate Int(mass)
+[#1] INFO:Minization -- RooMinimizer::optimizeConst: activating const optimization
+[#1] INFO:NumericIntegration -- RooRealIntegral::init(Phen thrs func_Int[mass]) using numeric integrator RooIntegrator1D to calculate Int(mass)
+[#1] INFO:Minization --  The following expressions will be evaluated in cache-and-track mode: (gauss 1,gauss 2,Phen thrs func)
+ **********
+ **    1 **SET PRINT           1
+ **********
+ **********
+ **    2 **SET NOGRAD
+ **********
+ PARAMETER DEFINITIONS:
+    NO.   NAME         VALUE      STEP SIZE      LIMITS
+     1 frac g1      1.80000e-01  9.00000e-02    0.00000e+00  1.00000e+00
+     2 frac g2      2.50000e-01  1.00000e-01    0.00000e+00  1.00000e+00
+     3 mean         1.45500e-01  2.00000e-03    1.40000e-01  1.60000e-01
+     4 pone        -2.40000e-01  8.00000e-01   -4.00000e+00  4.00000e+00
+     5 ptwo         5.00000e+00  3.00000e-01    3.00000e+00  6.00000e+00
+     6 pzeroz       2.70000e-03  8.50000e-04    1.00000e-03  5.00000e+00
+     7 sigma g1     2.00000e-04  9.50000e-05    1.00000e-05  1.00000e+00
+     8 sigma g2     4.00000e-04  1.95000e-04    1.00000e-05  1.00000e+00
+ **********
+ **    3 **SET ERR         0.5
+ **********
+ **********
+ **    4 **SET PRINT           1
+ **********
+ **********
+ **    5 **SET STR           1
+ **********
+ NOW USING STRATEGY  1: TRY TO BALANCE SPEED AGAINST RELIABILITY
+ **********
+ **    6 **MIGRAD        4000           1
+ **********
+ FIRST CALL TO USER FUNCTION AT NEW START POINT, WITH IFLAG=4.
+ START MIGRAD MINIMIZATION.  STRATEGY  1.  CONVERGENCE WHEN EDM .LT. 1.00e-03
+ FCN=-94937.3 FROM MIGRAD    STATUS=INITIATE       57 CALLS          58 TOTAL
+                     EDM= unknown      STRATEGY= 1      NO ERROR MATRIX       
+  EXT PARAMETER               CURRENT GUESS       STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  frac g1      1.80000e-01   9.00000e-02   0.00000e+00   2.93550e+03
+   2  frac g2      2.50000e-01   1.00000e-01   0.00000e+00   8.97185e+02
+   3  mean         1.45500e-01   2.00000e-03   0.00000e+00   3.22015e+04
+   4  pone        -2.40000e-01   8.00000e-01   0.00000e+00   3.95120e+01
+   5  ptwo         3.00004e+00   3.00000e-01  -1.90351e+00   1.11478e-01
+   6  pzeroz       2.70000e-03   8.50000e-04   0.00000e+00   1.27806e+03
+   7  sigma g1     2.00000e-04   9.50000e-05   0.00000e+00  -6.57862e+04
+   8  sigma g2     4.00000e-04   1.95000e-04   0.00000e+00  -1.08101e+05
+                               ERR DEF= 0.5
+ MIGRAD MINIMIZATION HAS CONVERGED.
+ FCN=-95900.1 FROM MIGRAD    STATUS=CONVERGED     359 CALLS         360 TOTAL
+                     EDM=1.2301e-06    STRATEGY= 1  ERROR MATRIX UNCERTAINTY   1.3 per cent
+  EXT PARAMETER                                   STEP         FIRST   
+  NO.   NAME      VALUE            ERROR          SIZE      DERIVATIVE 
+   1  frac g1      1.79415e-01   2.41844e-02   3.38353e-04  -1.68147e-02
+   2  frac g2      2.38269e-01   2.08126e-02  -3.14751e-04   3.17843e-02
+   3  mean         1.45418e-01   6.41237e-06   9.13212e-07  -8.10772e-01
+   4  pone         1.90122e+00   8.05752e-01  -6.49486e-04   6.96218e-04
+   5  ptwo         3.00003e+00   4.80894e-02   2.10199e-04  -3.16504e-03
+   6  pzeroz       2.73628e-03   3.03869e-04  -6.42616e-07  -2.85160e-02
+   7  sigma g1     3.23025e-04   2.08162e-05   1.89279e-06  -1.54519e-01
+   8  sigma g2     7.21585e-04   4.38949e-05   8.60582e-06   1.55534e+00
+                               ERR DEF= 0.5
+ EXTERNAL ERROR MATRIX.    NDIM=  25    NPAR=  8    ERR DEF=0.5
+  5.857e-04 -4.887e-04  1.178e-08  4.079e-03 -2.456e-07 -7.336e-07  4.679e-07  9.915e-07 
+ -4.887e-04  4.335e-04 -9.328e-09 -2.141e-03 -1.169e-07  3.813e-07 -3.974e-07 -8.122e-07 
+  1.178e-08 -9.328e-09  4.112e-11  3.464e-07  6.147e-11 -1.588e-10  1.252e-11  1.874e-11 
+  4.079e-03 -2.141e-03  3.464e-07  6.609e-01 -4.476e-07 -2.141e-04  3.032e-06  1.017e-05 
+ -2.456e-07 -1.169e-07  6.147e-11 -4.476e-07  5.255e-06 -1.392e-08 -6.815e-10 -2.366e-10 
+ -7.336e-07  3.813e-07 -1.588e-10 -2.141e-04 -1.392e-08  9.234e-08 -5.724e-10 -1.796e-09 
+  4.679e-07 -3.974e-07  1.252e-11  3.032e-06 -6.815e-10 -5.724e-10  4.333e-10  7.607e-10 
+  9.915e-07 -8.122e-07  1.874e-11  1.017e-05 -2.366e-10 -1.796e-09  7.607e-10  1.927e-09 
+ PARAMETER  CORRELATION COEFFICIENTS  
+       NO.  GLOBAL      1      2      3      4      5      6      7      8
+        1  0.98624   1.000 -0.970  0.076  0.207 -0.004 -0.100  0.929  0.933
+        2  0.97551  -0.970  1.000 -0.070 -0.126 -0.002  0.060 -0.917 -0.889
+        3  0.12818   0.076 -0.070  1.000  0.066  0.004 -0.082  0.094  0.067
+        4  0.90337   0.207 -0.126  0.066  1.000 -0.000 -0.867  0.179  0.285
+        5  0.05679  -0.004 -0.002  0.004 -0.000  1.000 -0.020 -0.014 -0.002
+        6  0.88629  -0.100  0.060 -0.082 -0.867 -0.020  1.000 -0.090 -0.135
+        7  0.93579   0.929 -0.917  0.094  0.179 -0.014 -0.090  1.000  0.833
+        8  0.94535   0.933 -0.889  0.067  0.285 -0.002 -0.135  0.833  1.000
+ **********
+ **    7 **SET ERR         0.5
+ **********
+ **********
+ **    8 **SET PRINT           1
+ **********
+ **********
+ **    9 **HESSE        4000
+ **********
+ COVARIANCE MATRIX CALCULATED SUCCESSFULLY
+ FCN=-95900.1 FROM HESSE     STATUS=OK             75 CALLS         435 TOTAL
+                     EDM=2.55427e-05    STRATEGY= 1      ERROR MATRIX ACCURATE 
+  EXT PARAMETER                                INTERNAL      INTERNAL  
+  NO.   NAME      VALUE            ERROR       STEP SIZE       VALUE   
+   1  frac g1      1.79415e-01   2.22298e-02   2.21047e-03  -6.96021e-01
+   2  frac g2      2.38269e-01   1.93599e-02   2.37854e-03  -5.50909e-01
+   3  mean         1.45418e-01   6.44264e-06   1.53878e-04  -4.75987e-01
+   4  pone         1.90122e+00   1.22684e+00   2.20131e-02   4.95310e-01
+   5  ptwo         3.00003e+00   1.56364e+00   3.71309e-01  -1.57682e+00
+   6  pzeroz       2.73628e-03   3.10409e-04   3.34908e-04  -1.53352e+00
+   7  sigma g1     3.23025e-04   1.91876e-05   8.90057e-05  -1.53541e+00
+   8  sigma g2     7.21585e-04   4.20421e-05   1.24494e-04  -1.51744e+00
+                               ERR DEF= 0.5
+ EXTERNAL ERROR MATRIX.    NDIM=  25    NPAR=  8    ERR DEF=0.5
+  4.947e-04 -4.143e-04  9.754e-09  2.088e-03  5.663e-05 -4.150e-07  3.902e-07  8.518e-07 
+ -4.143e-04  3.751e-04 -7.759e-09 -9.399e-04 -2.508e-05  1.288e-07 -3.354e-07 -6.860e-07 
+  9.754e-09 -7.759e-09  4.151e-11  2.377e-07  3.755e-09 -1.442e-10  1.095e-11  1.547e-11 
+  2.088e-03 -9.399e-04  2.377e-07  1.570e+00 -5.039e-02 -1.897e-04  1.452e-06  5.773e-06 
+  5.663e-05 -2.508e-05  3.755e-09 -5.039e-02  2.801e-03 -1.524e-06  3.910e-08  1.573e-07 
+ -4.150e-07  1.288e-07 -1.442e-10 -1.897e-04 -1.524e-06  9.635e-08 -2.953e-10 -1.210e-09 
+  3.902e-07 -3.354e-07  1.095e-11  1.452e-06  3.910e-08 -2.953e-10  3.682e-10  6.339e-10 
+  8.518e-07 -6.860e-07  1.547e-11  5.773e-06  1.573e-07 -1.210e-09  6.339e-10  1.768e-09 
+ PARAMETER  CORRELATION COEFFICIENTS  
+       NO.  GLOBAL      1      2      3      4      5      6      7      8
+        1  0.98398   1.000 -0.962  0.068  0.075  0.048 -0.060  0.914  0.911
+        2  0.96958  -0.962  1.000 -0.062 -0.039 -0.024  0.021 -0.903 -0.842
+        3  0.12082   0.068 -0.062  1.000  0.029  0.011 -0.072  0.089  0.057
+        4  0.95734   0.075 -0.039  0.029  1.000 -0.760 -0.488  0.060  0.110
+        5  0.94406   0.048 -0.024  0.011 -0.760  1.000 -0.093  0.039  0.071
+        6  0.88268  -0.060  0.021 -0.072 -0.488 -0.093  1.000 -0.050 -0.093
+        7  0.92356   0.914 -0.903  0.089  0.060  0.039 -0.050  1.000  0.786
+        8  0.92923   0.911 -0.842  0.057  0.110  0.071 -0.093  0.786  1.000
+[#1] INFO:Minization -- RooMinimizer::optimizeConst: deactivating const optimization
