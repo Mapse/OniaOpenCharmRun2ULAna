@@ -4,6 +4,7 @@ import time
 import os
 
 import coffea.processor as processor
+from coffea.nanoevents import BaseSchema
 
 from nanoAODplus_processor.EventSelectorProcessor import EventSelectorProcessor
 from data.fileset import filesets
@@ -26,8 +27,11 @@ if (args.select or args.analyze):
     
     files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][:100]}
 
-    #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][:100]}
-    #files = {'JPSIDZERO2017MC': filesets['JPSIDZERO2017MC'][:310]}
+
+
+    files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][1:45]}
+    #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][1:15]}
+    #files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:]}
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)
@@ -37,8 +41,8 @@ if (args.select or args.analyze):
         output = processor.run_uproot_job(files,
                                         treename='Events',
                                         processor_instance=EventSelectorProcessor(args.name),
-                                        executor=processor.futures_executor,
-                                        executor_args={'workers': config_yaml['n_cores'], 'flatten': True},
+                                        executor=processor.futures_executor, # Uses python futures to multiprocessing
+                                        executor_args={"schema": BaseSchema, 'workers': config_yaml['n_cores']}, # BaseSchema returns a base.nano-events object
                                         chunksize=config_yaml['chunksize'],
                                         )
 
@@ -47,7 +51,7 @@ if (args.select or args.analyze):
                                         treename='Events',
                                         processor_instance=EventSelectorProcessor(args.name),
                                         executor=processor.iterative_executor,
-                                        executor_args={'flatten': True},
+                                        executor_args={'schema': BaseSchema},
                                         chunksize=config_yaml['chunksize'],
                                         )
 

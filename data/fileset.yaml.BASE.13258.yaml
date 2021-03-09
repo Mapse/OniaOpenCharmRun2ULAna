@@ -4,24 +4,6 @@ charmonium_test:
       datatier: "AOD"
       year: "2017"
       path: 
-        - "data/path/Charmonium/Charmonium_path.txt"
-    
-    - primary_dataset: "Charmonium"
-      datatier: "MINIAOD"
-      year: "2017"
-      path: 
-        - "data/path/Charmonium/CharmoniumMINIAODpath.txt"
-    
-    - primary_dataset: "Charmonium"
-      datatier: "AOD"
-      year: "2018"
-      path:
-        - "data/path/Charmonium/Charmonium_path_2018B.txt"
-
-    - primary_dataset: "Charmonium"
-      datatier: "AOD"
-      year: "2017_2018"
-      path:
         - "data/path/Charmonium/CharmoniumAOD0000path.txt"
         - "data/path/Charmonium/CharmoniumAOD0001path.txt"
         - "data/path/Charmonium/CharmoniumAOD0002path.txt"
@@ -29,13 +11,12 @@ charmonium_test:
         - "data/path/Charmonium/CharmoniumAOD0004path.txt"
         - "data/path/Charmonium/CharmoniumAOD0005path.txt"
         - "data/path/Charmonium/CharmoniumAOD0006path.txt"
-        - "data/path/Charmonium/Charmonium_path_2018B.txt"
-
+    
     - primary_dataset: "Charmonium"
-      datatier: "AOD"
-      year: "2018"
-      path:
-        - "data/path/Charmonium/Charmonium_path_2018B.txt"
+      datatier: "MINIAOD"
+      year: "2017"
+      path: 
+        - "data/path/Charmonium/CharmoniumMINIAODpath.txt"
 
 # muonia_test
 muonia_test:
@@ -75,10 +56,3 @@ local_test:
     year: "test"
     path:
       - data/path/local_test/Charmonium_path.txt 
-
-MC:
-  - primary_dataset: "MonteCarlo"
-    datatier: "AOD"
-    year: "2017"
-    path:
-    - data/path/MonteCarlo/JpsiDstar_2017.txt
