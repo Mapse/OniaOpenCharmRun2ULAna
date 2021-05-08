@@ -31,7 +31,7 @@ if (args.select or args.analyze):
 
     #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][1:45]}
     #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][:]}
-    files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][1:2]}
+    files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][1:100]}
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)
