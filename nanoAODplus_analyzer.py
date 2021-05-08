@@ -18,6 +18,8 @@ parser.add_argument("-s", "--select", help="Do the evt selection", action="store
 parser.add_argument("-m","--merge", help="Merge the accumulators that were output from a analyzer", action="store_true")
 parser.add_argument("-p","--plots", help="Create the plots from the merged accumulator", action="store_true")
 parser.add_argument("-a","--analyze", help="Do the full analysis chain", action="store_true")
+parser.add_argument("-d", "--data", help="Run for data", action="store_true")
+parser.add_argument("-c", "--mc", help="Run for monte carlo", action="store_true")
 args = parser.parse_args()
 
 if (args.select or args.analyze):
@@ -25,22 +27,24 @@ if (args.select or args.analyze):
 
     tstart = time.time()
     
-    files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][:100]}
+    #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][:100]}
 
-
-
-    files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][1:45]}
-    #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][1:15]}
-    #files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:]}
+    #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][1:45]}
+    #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][:]}
+    files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][1:2]}
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)
-    os.system("rm -rf output/" + args.name + "/*")          
+    os.system("rm -rf output/" + args.name + "/*")
+
+    # If the process is for data or mc
+    if (args.data): analysis_type = 'data'    
+    if (args.mc): analysis_type = 'mc'      
 
     if config_yaml['executor'] == 'futures_executor': 
         output = processor.run_uproot_job(files,
                                         treename='Events',
-                                        processor_instance=EventSelectorProcessor(args.name),
+                                        processor_instance=EventSelectorProcessor(args.name, analysis_type),
                                         executor=processor.futures_executor, # Uses python futures to multiprocessing
                                         executor_args={"schema": BaseSchema, 'workers': config_yaml['n_cores']}, # BaseSchema returns a base.nano-events object
                                         chunksize=config_yaml['chunksize'],
@@ -49,7 +53,7 @@ if (args.select or args.analyze):
     elif config_yaml['executor'] == 'iterative_executor':
         output = processor.run_uproot_job(files,
                                         treename='Events',
-                                        processor_instance=EventSelectorProcessor(args.name),
+                                        processor_instance=EventSelectorProcessor(args.name, analysis_type),
                                         executor=processor.iterative_executor,
                                         executor_args={'schema': BaseSchema},
                                         chunksize=config_yaml['chunksize'],
@@ -64,4 +68,4 @@ if (args.merge or args.analyze):
 
 if (args.plots or args.analyze):
     from tools.plotter import plotter
-    plotter(args.name)    
+    plotter(args.name, analysis_type)    

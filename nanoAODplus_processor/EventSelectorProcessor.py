@@ -17,7 +17,11 @@ def association(cand1, cand2):
     ''' Function for association of the particles. The cuts that operates on all of them and 
     computation of quantities can go here. individual cuts can go on the main processing'''
 
-    asso = ak.cartesian([cand1, cand2])
+    #cut_dstar_back = ((cand2.deltamr > 0.143) & (cand2.deltamr < 0.148))
+    #cand2 = cand2[cut_dstar_back]
+
+    asso = ak.cartesian([cand1, cand2])    
+
     asso = asso[asso.slot0.vtxIdx == asso.slot1.vtxIdx]
     asso = asso[ak.num(asso) > 0]
     cand1 = ak.zip({
@@ -40,8 +44,9 @@ def association(cand1, cand2):
     return asso
 
 class EventSelectorProcessor(processor.ProcessorABC):
-    def __init__(self, analyzer_name):
+    def __init__(self, analyzer_name, analysis_type):
         self.analyzer_name = analyzer_name
+        self.analysis_type = analysis_type
 
         self._accumulator = processor.dict_accumulator({
             'cutflow': processor.defaultdict_accumulator(int),
@@ -62,7 +67,22 @@ class EventSelectorProcessor(processor.ProcessorABC):
 
         ############### Get the main primary vertex properties ############### 
         Primary_vertex = ak.zip({**get_vars_dict(events, primary_vertex_cols)})
+
+        ############### Get the gen particles properties ############### 
+        if (self.analysis_type == 'mc'): 
+            Gen_particles = ak.zip({**get_vars_dict(events, gen_part_cols)})
+        elif (self.analysis_type == 'data'):
+            Gen_particles = ak.zip([[]])
+
+        ## Cut for Gen jpsi
+        if (self.analysis_type == 'mc'): 
+            Gen_Jpsi = Gen_particles[Gen_particles.pdgId == 443]
+
+        # Cut for Gen D0
+        if (self.analysis_type == 'mc'): 
+            Gen_D0 = Gen_particles[Gen_particles.pdgId == 421]
         
+                
         ############### Get All the interesting candidates from NTuples
         Dimu = ak.zip({**get_vars_dict(events, dimu_cols)}, with_name="PtEtaPhiMCandidate")
         Muon = ak.zip({**get_vars_dict(events, muon_cols)}, with_name="PtEtaPhiMCandidate")
@@ -81,7 +101,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Dimu = Dimu[Dimu.charge == 0]
         output['cutflow']['Dimu 0 charge'] += ak.sum(ak.num(Dimu))
 
-        Dimu = Dimu[((Dimu.mass > 8.5) & (Dimu.mass < 11.5)) | ((Dimu.mass > 2.95) & (Dimu.mass < 3.25))]
+        Dimu = Dimu[((Dimu.mass > 8.5) & (Dimu.mass < 11.5)) | ((Dimu.mass > 2.9) & (Dimu.mass < 3.3)) | ((Dimu.mass > 3.35) & (Dimu.mass < 4.05))]
         output['cutflow']['Quarkonia mass'] += ak.sum(ak.num(Dimu))
         
         # Prompt/nomprompt cut for jpsi
@@ -124,9 +144,16 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Dimu = Dimu[muon_eta_cut]
         Muon = Muon[muon_eta_cut]
         output['cutflow']['Dimu muon eta cut'] += ak.sum(ak.num(Dimu))
+        
+        #dimu_pt_cut = (Dimu.pt > 22) & (Dimu.pt < 26)
+        #Dimu = Dimu[dimu_pt_cut]
+
+        #dimu_rap_cut = (Dimu.rap > 1.2) & (Dimu.rap < 1.8)
+        #Dimu = Dimu[dimu_rap_cut]
 
         Dimu['is_ups'] = (Dimu.mass > 8.5) & (Dimu.mass < 11.5)
-        Dimu['is_jpsi'] = (Dimu.mass > 2.9) & (Dimu.mass < 3.33)
+        Dimu['is_jpsi'] = (Dimu.mass > 2.9) & (Dimu.mass < 3.3)
+        Dimu['is_psi'] = (Dimu.mass > 3.35) & (Dimu.mass < 4.05)
 
         ############### Cuts for D0
         D0 = D0[~D0.hasMuon]
@@ -243,21 +270,44 @@ class EventSelectorProcessor(processor.ProcessorABC):
         output['cutflow']['Dstar final']   += ak.sum(ak.num(Dstar))
         output['cutflow']['Dimu Dstar Associated'] += ak.sum(ak.num(DimuDstar))
 
-        ############### Leading and Trailing muon separation
+        ############### Leading and Trailing muon separation Gen_particles
         leading_mu = (Muon.slot0.pt > Muon.slot1.pt)
         Muon_lead = ak.where(leading_mu, Muon.slot0, Muon.slot1)
         Muon_trail = ak.where(~leading_mu, Muon.slot0, Muon.slot1)
 
         ############### Create the accumulators to save output
+
+        # Primary vertex accumulator
         primary_vertex_acc = processor.dict_accumulator({})
         for var in Primary_vertex.fields:
-            #print(primary_vertex_acc[var])
-            
             primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(Primary_vertex[var]))
-        #primary_vertex_acc["nPrimaryVertex"] = processor.column_accumulator(ak.to_numpy(ak.num(Primary_vertex)))
         output["Primary_vertex"] = primary_vertex_acc
-        
 
+        # Gen Particles accumulator
+        gen_part_acc = processor.dict_accumulator({})
+        if (self.analysis_type == 'mc'):
+            for var in Gen_particles.fields:
+                gen_part_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_particles[var])))
+            gen_part_acc['nGenPart'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_particles))) 
+            output["Gen_particles"] = gen_part_acc
+
+        # Gen Jpsi accumulator
+        gen_jpsi_acc = processor.dict_accumulator({})
+        if (self.analysis_type == 'mc'):
+            for var in Gen_Jpsi.fields:
+                gen_jpsi_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_Jpsi[var])))
+            gen_jpsi_acc['nGenJpsi'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_Jpsi))) 
+            output["Gen_Jpsi"] = gen_jpsi_acc
+            
+        # Gen D0 accumulator
+        gen_d0_acc = processor.dict_accumulator({})
+        if (self.analysis_type == 'mc'):
+            for var in Gen_D0.fields:
+                gen_d0_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_D0[var])))
+            gen_d0_acc['nGenD0'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_D0[var])))
+            output["Gen_D0"] = gen_d0_acc
+            
+    
         muon_lead_acc = processor.dict_accumulator({})
         for var in Muon_lead.fields:
             muon_lead_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Muon_lead[var])))
