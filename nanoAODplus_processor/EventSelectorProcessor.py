@@ -78,6 +78,10 @@ class EventSelectorProcessor(processor.ProcessorABC):
         if (self.analysis_type == 'mc'): 
             Gen_Jpsi = Gen_particles[Gen_particles.pdgId == 443]
 
+        # Cut for Gen Dstar
+        if (self.analysis_type == 'mc'): 
+            Gen_Dstar = Gen_particles[Gen_particles.pdgId == 413]
+
         # Cut for Gen D0
         if (self.analysis_type == 'mc'): 
             Gen_D0 = Gen_particles[Gen_particles.pdgId == 421]
@@ -298,6 +302,14 @@ class EventSelectorProcessor(processor.ProcessorABC):
                 gen_jpsi_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_Jpsi[var])))
             gen_jpsi_acc['nGenJpsi'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_Jpsi))) 
             output["Gen_Jpsi"] = gen_jpsi_acc
+        
+        # Gen Dstar accumulator
+        gen_dstar_acc = processor.dict_accumulator({})
+        if (self.analysis_type == 'mc'):
+            for var in Gen_Dstar.fields:
+                gen_dstar_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_Dstar[var])))
+            gen_dstar_acc['nGenDstar'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_Dstar[var])))
+            output["Gen_Dstar"] = gen_dstar_acc
             
         # Gen D0 accumulator
         gen_d0_acc = processor.dict_accumulator({})
