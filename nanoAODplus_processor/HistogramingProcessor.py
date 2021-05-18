@@ -218,10 +218,26 @@ class HistogramingProcessor(processor.ProcessorABC):
              'GenJpsi_p': hist.Hist("Events", 
                                     hist.Bin("pt", "$p_{T,\mu^+\mu^-}$ [GeV]", 100, 0, 100),
                                     hist.Bin("eta", "$\eta_{\mu^+\mu^-}$", 60, -2.5, 2.5),
-                                    hist.Bin("phi", "$\phi_{\mu^+\mu^-}$", 70, -3.5, 3.5)),})
+                                    hist.Bin("phi", "$\phi_{\mu^+\mu^-}$", 70, -3.5, 3.5)),
+             'GenJpsi_vx': hist.Hist("Events", hist.Bin("VertexX", "Vertex x [cm]", 100, -0.1, 0.1)),
+             'GenJpsi_vy': hist.Hist("Events", hist.Bin("VertexY", "Vertex y [cm]", 100, -0.05, 0.15)),
+             'GenJpsi_vz': hist.Hist("Events", hist.Bin("VertexZ", "Vertex z [cm]", 80, -12, 12)),
+             'GenDstar_mass': hist.Hist("Events",
+                                          hist.Bin("mass", "$\mass$ [GeV]", 50, 0.138, 0.162)),
+             'GenDstar_p': hist.Hist("Events", 
+                                    hist.Bin("pt", "$p_{T,D*}$ [GeV]", 100, 0, 50),
+                                    hist.Bin("eta", "$\eta_{D*}$", 80, -2.5, 2.5),
+                                    hist.Bin("phi", "$\phi_{D*}$", 70, -3.5, 3.5)),
+             'GenDstar_vx': hist.Hist("Events", hist.Bin("VertexX", "Vertex x [cm]", 100, -0.1, 0.1)),
+             'GenDstar_vy': hist.Hist("Events", hist.Bin("VertexY", "Vertex y [cm]", 100, -0.05, 0.15)),
+             'GenDstar_vz': hist.Hist("Events", hist.Bin("VertexZ", "Vertex z [cm]", 80, -12, 12)),
+             'GenD0_mass': hist.Hist("Events", hist.Bin("mass", "$m_{D^0, 12}$ [GeV]", 100, 1.7, 2.0)),
+             'GenD0_p': hist.Hist("Events", 
+                              hist.Bin("pt", "$p_{T,D^0}$ [GeV]", 100, 0, 50),
+                              hist.Bin("eta", "$\eta_{D^0}$", 80, -2.5, 2.5),
+                              hist.Bin("phi", "$\phi_{D^0}$", 70, -3.5, 3.5)),})
             
-
-     
+    
     @property
     def accumulator(self):
         return self._accumulator
@@ -245,21 +261,34 @@ class HistogramingProcessor(processor.ProcessorABC):
         if (analysis_type == 'mc'):
             Gen_Part_acc = acc['Gen_particles']
             Gen_Jpsi_acc = acc['Gen_Jpsi']
+            Gen_Dstar_acc = acc['Gen_Dstar']
+            Gen_D0_acc = acc['Gen_D0']
         
 
         ########## Filling histograms
         if (analysis_type == 'mc'):
             ## Gen Particles
-            print(Gen_Jpsi_acc['mass'].value)
+            
             output['GenPart_pdgId'].fill(pdgId=Gen_Part_acc['pdgId'].value)
             output['GenJpsi_mass'].fill(mass=Gen_Jpsi_acc['mass'].value)
+            output['GenJpsi_vx'].fill(VertexX=Gen_Jpsi_acc['vx'].value)
+            output['GenJpsi_vy'].fill(VertexY=Gen_Jpsi_acc['vy'].value)
+            output['GenJpsi_vz'].fill(VertexZ=Gen_Jpsi_acc['vz'].value)
             output['GenJpsi_p'].fill(pt=Gen_Jpsi_acc['pt'].value,
                                  eta=Gen_Jpsi_acc['eta'].value,
-                                 phi=Gen_Jpsi_acc['phi'].value)
+                                 phi=Gen_Jpsi_acc['phi'].value),
+            #output['GenDstar_deltam'].fill(mass=Gen_Dstar_acc['mass'].value)
+            output['GenDstar_p'].fill(pt=Gen_Dstar_acc['pt'].value,
+                                 eta=Gen_Dstar_acc['eta'].value,
+                                 phi=Gen_Dstar_acc['phi'].value)
+            output['GenDstar_vx'].fill(VertexX=Gen_Dstar_acc['vx'].value)
+            output['GenDstar_vy'].fill(VertexY=Gen_Dstar_acc['vy'].value)
+            output['GenDstar_vz'].fill(VertexZ=Gen_Dstar_acc['vz'].value)
+            output['GenD0_mass'].fill(mass=Gen_Dstar_acc['mass'].value)
+            output['GenD0_p'].fill(pt=Gen_D0_acc['pt'].value,
+                                 eta=Gen_D0_acc['eta'].value,
+                                 phi=Gen_D0_acc['phi'].value)
             
-            #print(dir(Gen_Jpsi_acc))
-            #output['GenJpsi_mass'].fill(pdgId=Gen_Jpsi_acc['pdgId'].value)
-        
 
         
         # Primary vertex
