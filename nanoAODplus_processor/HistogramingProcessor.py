@@ -171,7 +171,7 @@ class HistogramingProcessor(processor.ProcessorABC):
                                     hist.Bin("phi", "$\phi_{\mu^+\mu^-}$", 70, -3.5, 3.5)),
                 'Jpsi_rap': hist.Hist("Events", hist.Bin("rap", "y", 60, -2.5, 2.5)),
                 'JpsiDstar_deltarap': hist.Hist("Events", hist.Bin("deltarap", "$\Delta y$", 50, -5, 5)),
-                'JpsiDstar_mass': hist.Hist("Events", hist.Bin("mass", "$m_{J/\psi D*}$ [GeV]", 100, 0, 100)),
+                'JpsiDstar_mass': hist.Hist("Events", hist.Bin("mass", "$m_{J/\psi D*}$ [GeV]", 50, 0, 100)),
                 'Dstar_p': hist.Hist("Events",
                                  hist.Cat("chg", "charge"), 
                                  hist.Bin("pt", "$p_{T,D*}$ [GeV]", 100, 0, 50),
@@ -214,6 +214,10 @@ class HistogramingProcessor(processor.ProcessorABC):
         })
         if (analysis_type == 'mc'):
             self._accumulator.add({'GenPart_pdgId': hist.Hist("Events", hist.Bin("pdgId", "Gen Particle PDG Id", 60, 0, 1000)),
+             'GenMuon_p': hist.Hist("Events", 
+                                       hist.Bin("pt", "$p_{T,\mu}$ [GeV]", 50, 0, 50),
+                                       hist.Bin("eta", "$\eta_{\mu}$", 40, -2.5, 2.5),
+                                       hist.Bin("phi", "$\phi_{\mu}$", 40, -3.5, 3.5)),
              'GenJpsi_mass': hist.Hist("Events", hist.Bin("mass", "Gen jpsi", 10, 2.95, 3.25)),
              'GenJpsi_p': hist.Hist("Events", 
                                     hist.Bin("pt", "$p_{T,\mu^+\mu^-}$ [GeV]", 100, 0, 100),
@@ -235,7 +239,7 @@ class HistogramingProcessor(processor.ProcessorABC):
              'GenD0_p': hist.Hist("Events", 
                               hist.Bin("pt", "$p_{T,D^0}$ [GeV]", 100, 0, 50),
                               hist.Bin("eta", "$\eta_{D^0}$", 80, -2.5, 2.5),
-                              hist.Bin("phi", "$\phi_{D^0}$", 70, -3.5, 3.5)),})
+                              hist.Bin("phi", "$\phi_{D^0}$", 50, -3.5, 3.5)),})
             
     
     @property
@@ -260,6 +264,7 @@ class HistogramingProcessor(processor.ProcessorABC):
 
         if (analysis_type == 'mc'):
             Gen_Part_acc = acc['Gen_particles']
+            Gen_Muon_acc = acc['Gen_Muon']
             Gen_Jpsi_acc = acc['Gen_Jpsi']
             Gen_Dstar_acc = acc['Gen_Dstar']
             Gen_D0_acc = acc['Gen_D0']
@@ -270,6 +275,9 @@ class HistogramingProcessor(processor.ProcessorABC):
             ## Gen Particles
             
             output['GenPart_pdgId'].fill(pdgId=Gen_Part_acc['pdgId'].value)
+            output['GenMuon_p'].fill(pt=Gen_Muon_acc['pt'].value,
+                                 eta=Gen_Muon_acc['eta'].value,
+                                 phi=Gen_Muon_acc['phi'].value)
             output['GenJpsi_mass'].fill(mass=Gen_Jpsi_acc['mass'].value)
             output['GenJpsi_vx'].fill(VertexX=Gen_Jpsi_acc['vx'].value)
             output['GenJpsi_vy'].fill(VertexY=Gen_Jpsi_acc['vy'].value)
@@ -289,8 +297,6 @@ class HistogramingProcessor(processor.ProcessorABC):
                                  eta=Gen_D0_acc['eta'].value,
                                  phi=Gen_D0_acc['phi'].value)
             
-
-        
         # Primary vertex
         output['Primary_vertex_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
         
@@ -301,7 +307,6 @@ class HistogramingProcessor(processor.ProcessorABC):
         output['Muon_trail_p'].fill(pt=Muon_trail_acc['pt'].value,
                                     eta=Muon_trail_acc['eta'].value,
                                     phi=Muon_trail_acc['phi'].value)
-
         # Upsilon
         output['Upsilon_mass'].fill(mass=Dimu_acc['mass'].value[Dimu_acc['is_ups'].value])
         output['Upsilon_p'].fill(pt=Dimu_acc['pt'].value[Dimu_acc['is_ups'].value],

@@ -44,36 +44,69 @@ def association(cand1, cand2):
     
     return asso
 
-def mc_matching(cand1, cand2):
+def mc_matching(muonrec1, muonrec2, dimurec, *genpart):
     ''' Function for the matching between the reco and gen particles. The cuts that operates on all of them and 
     computation of quantities can go here. individual cuts can go on the main processing. The first candidate
     is chosen to be the reconstructed one'''
 
-    match = ak.cartesian([cand1, cand2])    
+    #mc_matching(Muon.slot0, Muon.slot1, Gen_particles)
+    #mc_matching(Muon.slot0, Muon.slot0, Muon1_Gen, Muon2_Gen)
 
-    match = match[match.slot0.simIdx == match.slot1.Id]
-    
-    match = match[ak.num(match) > 0]
-    cand1 = ak.zip({
-            'pt': match.slot0.pt,
-            'eta': match.slot0.eta,
-            'phi': match.slot0.phi,
-            'mass': match.slot0.mass,
-            'simIdx' : match.slot0.simIdx}, with_name="PtEtaPhiMCandidate")
+    match1 = ak.cartesian([muonrec1, genpart[0]])
+    match1 = match1[match1.slot0.simIdx == match1.slot1.Id]
+    dimurec = dimurec[match1.slot0.simIdx == match1.slot1.Id]
+    match1 = match1[ak.num(match1) > 0]
 
-    cand2 = ak.zip({
-            'pt': match.slot1.pt,
-            'eta': match.slot1.eta,
-            'phi': match.slot1.phi,
-            'mass': match.slot1.mass,
-            'Id' : match.slot1.Id,
-            'pdgId': match.slot1.pdgId,
-            'genPartIdxMother': match.slot1.genPartIdxMother,
-            'parpdgId' : match.slot1.parpdgId}, with_name="PtEtaPhiMCandidate")
-    
-    return cand1, cand2
+    if (len(genpart) == 1):
+        match2 = ak.cartesian([muonrec2, genpart[0]])
+        match2 = match2[match2.slot0.simIdx == match2.slot1.Id]
+        dimurec = dimurec[match2.slot0.simIdx == match2.slot1.Id]
+        match2 = match2[ak.num(match2) > 0]
+    elif (len(genpart) == 2):
+        match2 = ak.cartesian([muonrec2, genpart[1]])
+        match2 = match2[match2.slot0.simIdx == match2.slot1.Id]
+        dimurec = dimurec[match2.slot0.simIdx == match2.slot1.Id]
+        match2 = match2[ak.num(match2) > 0]
+ 
+    muonrec1 = ak.zip({
+            'pt': match1.slot0.pt,
+            'eta': match1.slot0.eta,
+            'phi': match1.slot0.phi,
+            'mass': match1.slot0.mass,
+            'Id': match1.slot0.Id,
+            'simIdx' : match1.slot0.simIdx}, with_name="PtEtaPhiMCandidate")
 
-class EventSelectorProcessor(processor.ProcessorABC):
+    muongen1 = ak.zip({
+            'pt': match1.slot1.pt,
+            'eta': match1.slot1.eta,
+            'phi': match1.slot1.phi,
+            'mass': match1.slot1.mass,
+            'Id' : match1.slot1.Id,
+            'pdgId': match1.slot1.pdgId,
+            'genPartIdxMother': match1.slot1.genPartIdxMother,
+            'parpdgId' : match1.slot1.parpdgId}, with_name="PtEtaPhiMCandidate")
+
+    muonrec2 = ak.zip({
+            'pt': match2.slot0.pt,
+            'eta': match2.slot0.eta,
+            'phi': match2.slot0.phi,
+            'mass': match2.slot0.mass,
+            'Id': match2.slot0.Id,
+            'simIdx' : match2.slot0.simIdx}, with_name="PtEtaPhiMCandidate")
+
+    muongen2 = ak.zip({
+            'pt': match2.slot1.pt,
+            'eta': match2.slot1.eta,
+            'phi': match2.slot1.phi,
+            'mass': match2.slot1.mass,
+            'Id' : match2.slot1.Id,
+            'pdgId': match2.slot1.pdgId,
+            'genPartIdxMother': match2.slot1.genPartIdxMother,
+            'parpdgId' : match2.slot1.parpdgId}, with_name="PtEtaPhiMCandidate")
+        
+    return muonrec1, muongen1, muonrec2, muongen2, dimurec
+
+class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
     def __init__(self, analyzer_name, analysis_type):
         self.analyzer_name = analyzer_name
         self.analysis_type = analysis_type
@@ -231,16 +264,13 @@ class EventSelectorProcessor(processor.ProcessorABC):
         muon_eta_cut = (np.absolute(Muon.slot0.eta) <= 2.4) & (np.absolute(Muon.slot1.eta) <= 2.4)
         Dimu = Dimu[muon_eta_cut]
         Muon = Muon[muon_eta_cut]
+        
         output['cutflow']['Dimu muon eta cut'] += ak.sum(ak.num(Dimu))
 
-        ################################################################## Matching of the muon
-
-        Gen_Mu = ak.zip({'0': Gen_particles[Muon.slot0.simIdx], '1': Gen_particles[Muon.slot1.simIdx]})
-
+        """ ################################################################## Matching of the muon
         
-        Muon1_Rec, Muon1_Gen = mc_matching(Muon.slot0, Gen_particles)
-        Muon2_Rec, Muon2_Gen = mc_matching(Muon.slot1, Gen_particles)
-
+        Muon1_Rec, Muon1_Gen, Muon2_Rec, Muon2_Gen, dimurec = mc_matching(Muon.slot0, Muon.slot1, Dimu, Gen_particles)
+        ##################33possibilidade: Pegar as gen particles como muons!!!!!!!!!!!!!!!!!!!
         Gendimu_match_dimu = ak.zip([Muon1_Gen, Muon2_Gen])
 
         Gendimu_same_mother = Gendimu_match_dimu[Gendimu_match_dimu.slot0.genPartIdxMother == Gendimu_match_dimu.slot1.genPartIdxMother]
@@ -251,7 +281,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
             'eta': Gendimu_same_mother.slot0.eta,
             'phi': Gendimu_same_mother.slot0.phi,
             'mass': Gendimu_same_mother.slot0.mass,
-            'Id' : Gendimu_same_mother.slot1.Id,
+            'Id' : Gendimu_same_mother.slot0.Id,
             'pdgId': Gendimu_same_mother.slot0.pdgId,
             'genPartIdxMother': Gendimu_same_mother.slot0.genPartIdxMother,
             'parpdgId' : Gendimu_same_mother.slot0.parpdgId}, with_name="PtEtaPhiMCandidate")
@@ -265,11 +295,26 @@ class EventSelectorProcessor(processor.ProcessorABC):
             'pdgId': Gendimu_same_mother.slot1.pdgId,
             'genPartIdxMother': Gendimu_same_mother.slot1.genPartIdxMother,
             'parpdgId' : Gendimu_same_mother.slot1.parpdgId}, with_name="PtEtaPhiMCandidate")
-   
-        Muon1_Rec, Muon1_Gen = mc_matching(Muon1_Rec, Muon1_Gen)
-        Muon2_Rec, Muon2_Gen = mc_matching(Muon2_Rec, Muon2_Gen)
 
-        Muon = ak.zip({'0': Muon[Dimu.t1muIdx], '1': Muon[Dimu.t2muIdx]})
+        Muon1_Rec, Muon1_Gen, Muon2_Rec, Muon2_Gen, dimurec = mc_matching(Muon1_Rec, Muon2_Rec, dimurec, Muon1_Gen, Muon2_Gen)
+        #print(ak.sum(ak.num(Muon1_Rec))) """
+        #print(ak.sum(ak.num(dimurec)))
+        #Muon = ak.zip({'0': Muon1_Rec, '1': Muon2_Rec})
+        #Muon = ak.zip({'0': Muon[Dimu.t1muIdx], '1': Muon[Dimu.t2muIdx]})
+        #print(Dimu.t1muIdx)
+        #print(Muon.slot0.Id)
+        #Dimu = Dimu[Dimu.t1muIdx == Muon.Id]
+        #Dimu == Dimu[Muon.Id]
+        #print(Dimu)
+        
+        #Muon.slot0 = Muon1_Rec
+        #Muon.slot1 = Muon2_Rec
+
+        #print(Muon.slot0)
+        #print("sdsadsadsadsad")
+        #print(Muon1_Rec)
+
+        #Muon = ak.zip({'0': Muon[Dimu.t1muIdx], '1': Muon[Dimu.t2muIdx]})
 
 
 
@@ -307,19 +352,19 @@ class EventSelectorProcessor(processor.ProcessorABC):
         
         else:
             
-            D0 = D0[(D0.t1pt > 0.8) & (D0.t2pt > 0.8)]
+            #D0 = D0[(D0.t1pt > 0.8) & (D0.t2pt > 0.8)]
             output['cutflow']['D0 trk pt cut'] += ak.sum(ak.num(D0))
 
-            D0 = D0[(D0.t1chindof < 2.5) & (D0.t2chindof < 2.5)]
+            #D0 = D0[(D0.t1chindof < 2.5) & (D0.t2chindof < 2.5)]
             output['cutflow']['D0 trk chi2 cut'] += ak.sum(ak.num(D0))
 
-            D0 = D0[(D0.t1nValid > 4) & (D0.t2nValid > 4) & (D0.t1nPix > 1) & (D0.t1nPix > 1)]
+            #D0 = D0[(D0.t1nValid > 4) & (D0.t2nValid > 4) & (D0.t1nPix > 1) & (D0.t1nPix > 1)]
             output['cutflow']['D0 trk hits cut'] += ak.sum(ak.num(D0))
 
-            D0 = D0[(D0.t1dxy < 0.1) & (D0.t2dxy < 0.1)]
+            #D0 = D0[(D0.t1dxy < 0.1) & (D0.t2dxy < 0.1)]
             output['cutflow']['D0 trk dxy cut'] += ak.sum(ak.num(D0))
 
-            D0 = D0[(D0.t1dz < 1.) & (D0.t2dz < 1.)]
+            #D0 = D0[(D0.t1dz < 1.) & (D0.t2dz < 1.)]
             output['cutflow']['D0 trk dz cut'] += ak.sum(ak.num(D0))
 
         # D0 cosphi
@@ -328,7 +373,8 @@ class EventSelectorProcessor(processor.ProcessorABC):
 
         else:
 
-            D0 = D0[D0.cosphi > 0.99]
+            #D0 = D0[D0.cosphi > 0.99]
+            print("yeah")
         output['cutflow']['D0 cosphi cut'] += ak.sum(ak.num(D0))
 
         # D0 dl Significance
@@ -336,7 +382,8 @@ class EventSelectorProcessor(processor.ProcessorABC):
             D0 = D0[D0.dlSig > 5.]
         else:
 
-            D0 = D0[D0.dlSig > 5.]
+            #D0 = D0[D0.dlSig > 5.]
+            print("yeah")
         output['cutflow']['D0 dlSig cut'] += ak.sum(ak.num(D0))
 
         # D0 pt

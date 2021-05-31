@@ -7,6 +7,7 @@ import coffea.processor as processor
 from coffea.nanoevents import BaseSchema
 
 from nanoAODplus_processor.EventSelectorProcessor import EventSelectorProcessor
+from nanoAODplus_processor.MonteCarloEventSelectorProcessor import MonteCarloEventSelectorProcessor
 from data.fileset import filesets
 import yaml
 
@@ -28,23 +29,29 @@ if (args.select or args.analyze):
     tstart = time.time()
     
     #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][:100]}
+    #files = {'Charmonium_new2017AOD': filesets['Charmonium_new2017AOD'][:]}
 
     #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][1:45]}
     #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][:]}
-    files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][1:100]}
+    files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:]}
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)
     os.system("rm -rf output/" + args.name + "/*")
 
     # If the process is for data or mc
-    if (args.data): analysis_type = 'data'    
-    if (args.mc): analysis_type = 'mc'      
+    if (args.data):
+        analysis_type = 'data'
+        processor_instance = EventSelectorProcessor(args.name, analysis_type)
+
+    if (args.mc):
+        analysis_type = 'mc'     
+        processor_instance = MonteCarloEventSelectorProcessor(args.name, analysis_type) 
 
     if config_yaml['executor'] == 'futures_executor': 
         output = processor.run_uproot_job(files,
                                         treename='Events',
-                                        processor_instance=EventSelectorProcessor(args.name, analysis_type),
+                                        processor_instance=processor_instance,
                                         executor=processor.futures_executor, # Uses python futures to multiprocessing
                                         executor_args={"schema": BaseSchema, 'workers': config_yaml['n_cores']}, # BaseSchema returns a base.nano-events object
                                         chunksize=config_yaml['chunksize'],
@@ -53,7 +60,7 @@ if (args.select or args.analyze):
     elif config_yaml['executor'] == 'iterative_executor':
         output = processor.run_uproot_job(files,
                                         treename='Events',
-                                        processor_instance=EventSelectorProcessor(args.name, analysis_type),
+                                        processor_instance=processor_instance,
                                         executor=processor.iterative_executor,
                                         executor_args={'schema': BaseSchema},
                                         chunksize=config_yaml['chunksize'],

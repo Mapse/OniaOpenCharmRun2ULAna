@@ -21,7 +21,9 @@ def genPlots(file_path, process_name):
 
     ## ----------- Vertex sections ----------- ##
 
-    """ # Primary vertex distributions
+    
+
+     # Primary vertex distributions
     ax = crep.create_plot1d(hists['Primary_vertex_npvs'])
     plt.savefig('mc_plots/' + process_name + 'Reconstructed_primary_vertex.png')
     plt.clf()
@@ -30,7 +32,22 @@ def genPlots(file_path, process_name):
 
     ## ----------- Gen Particles section ----------- ##
 
-    # Gen Particle ID
+    # Gen Muon pT
+    ax = crep.create_plot1d(hists['GenMuon_p'].sum('eta', 'phi'))
+    plt.savefig('mc_plots/' + process_name + '/Gen_Muon_pt.png')
+    plt.clf()
+
+    # Gen Muon eta
+    ax = crep.create_plot1d(hists['GenMuon_p'].sum('pt', 'phi'))
+    plt.savefig('mc_plots/' + process_name + '/Gen_Muon_eta.png')
+    plt.clf()
+
+    # Gen Muon phi
+    ax = crep.create_plot1d(hists['GenMuon_p'].sum('eta', 'pt'))
+    plt.savefig('mc_plots/' + process_name + '/Gen_Muon_phi.png')
+    plt.clf()
+
+    """# Gen Particle ID
     ax = crep.create_plot1d(hists['GenPart_pdgId'])
     plt.savefig('mc_plots/' + process_name + '/Gen_particles_Id.png')
     plt.clf()
@@ -91,7 +108,7 @@ def genPlots(file_path, process_name):
     # Gen Dstar phi
     ax = crep.create_plot1d(hists['GenDstar_p'].sum('eta', 'pt'))
     plt.savefig('mc_plots/' + process_name + '/Gen_dstar_phi.png')
-    plt.clf() """
+    plt.clf() 
 
     ax = crep.create_plot1d(hists['GenDstar_vx'])
     plt.savefig('mc_plots/' + process_name + '/GenDstar_vx.png')
@@ -103,7 +120,7 @@ def genPlots(file_path, process_name):
 
     ax = crep.create_plot1d(hists['GenDstar_vz'])
     plt.savefig('mc_plots/' + process_name + '/GenDstar_vz.png')
-    plt.clf()
+    plt.clf()"""
 
 def recPlots(file_path, process_name):
 
