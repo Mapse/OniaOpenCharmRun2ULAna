@@ -41,11 +41,11 @@ charmonium_test:
       datatier: "AOD"
       year: "2017"
       path:
-        - "data/path/Charmonium/New_processing/CharmoniumAOD0000NewPropath.txt"
-        - "data/path/Charmonium/New_processing/CharmoniumAOD0001NewPropath.txt"
-        - "data/path/Charmonium/New_processing/CharmoniumAOD0002NewPropath.txt"
-        - "data/path/Charmonium/New_processing/CharmoniumAOD0003NewPropath.txt"
-        - "data/path/Charmonium/New_processing/CharmoniumAOD0004NewPropath.txt"
+        #- "data/path/Charmonium/New_processing/CharmoniumAOD0000NewPropath.txt"
+        #- "data/path/Charmonium/New_processing/CharmoniumAOD0001NewPropath.txt"
+        #- "data/path/Charmonium/New_processing/CharmoniumAOD0002NewPropath.txt"
+        #- "data/path/Charmonium/New_processing/CharmoniumAOD0003NewPropath.txt"
+        #- "data/path/Charmonium/New_processing/CharmoniumAOD0004NewPropath.txt"
         - "data/path/Charmonium/New_processing/CharmoniumAOD0005NewPropath.txt"
 
 # muonia_test
@@ -92,6 +92,6 @@ MC:
     datatier: "AOD"
     year: "2017"
     path:
-    - data/path/MonteCarlo/JpsiDstar_newProcessTest_2017.txt
+    - data/path/MonteCarlo/JpsiDstar_newProcess_2017.txt
 
  

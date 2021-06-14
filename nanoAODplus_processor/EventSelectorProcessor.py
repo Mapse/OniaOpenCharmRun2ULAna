@@ -44,39 +44,9 @@ def association(cand1, cand2):
     
     return asso
 
-def mc_matching(cand1, cand2):
-    ''' Function for the matching between the reco and gen particles. The cuts that operates on all of them and 
-    computation of quantities can go here. individual cuts can go on the main processing. The first candidate
-    is chosen to be the reconstructed one'''
-
-    match = ak.cartesian([cand1, cand2])    
-
-    match = match[match.slot0.simIdx == match.slot1.Id]
-    
-    match = match[ak.num(match) > 0]
-    cand1 = ak.zip({
-            'pt': match.slot0.pt,
-            'eta': match.slot0.eta,
-            'phi': match.slot0.phi,
-            'mass': match.slot0.mass,
-            'simIdx' : match.slot0.simIdx}, with_name="PtEtaPhiMCandidate")
-
-    cand2 = ak.zip({
-            'pt': match.slot1.pt,
-            'eta': match.slot1.eta,
-            'phi': match.slot1.phi,
-            'mass': match.slot1.mass,
-            'Id' : match.slot1.Id,
-            'pdgId': match.slot1.pdgId,
-            'genPartIdxMother': match.slot1.genPartIdxMother,
-            'parpdgId' : match.slot1.parpdgId}, with_name="PtEtaPhiMCandidate")
-    
-    return cand1, cand2
-
 class EventSelectorProcessor(processor.ProcessorABC):
-    def __init__(self, analyzer_name, analysis_type):
+    def __init__(self, analyzer_name):
         self.analyzer_name = analyzer_name
-        self.analysis_type = analysis_type
 
         self._accumulator = processor.dict_accumulator({
             'cutflow': processor.defaultdict_accumulator(int),
@@ -97,79 +67,6 @@ class EventSelectorProcessor(processor.ProcessorABC):
 
         ############### Get the main primary vertex properties ############### 
         Primary_vertex = ak.zip({**get_vars_dict(events, primary_vertex_cols)})
-
-        ############### Get the gen particles ############### 
-
-        if (self.analysis_type == 'mc'): 
-
-            # All gen particles
-            Gen_particles = ak.zip({**get_vars_dict(events, gen_part_cols)})
-
-            # Gen Muons
-            Gen_Muon = Gen_particles[(Gen_particles.pdgId == 13) | (Gen_particles.pdgId == -13)]
-
-            # Gen Jpsi
-            Gen_Jpsi = Gen_particles[Gen_particles.pdgId == 443]
-
-            # Gen D0
-            Gen_D0 = Gen_particles[(Gen_particles.pdgId == 421) | (Gen_particles.pdgId == -421)]
-
-            # Gen Dstar
-            Gen_Dstar_all = Gen_particles[(Gen_particles.pdgId == 413) | (Gen_particles.pdgId == -413)]
-            
-            # Forces it to has only two daughters
-            Gen_Dstar_all = Gen_Dstar_all[Gen_Dstar_all.numberOfDaughters == 2]
-                        
-            # Dstar daughters: D0
-            Gen_D0Dstar = ak.cartesian([Gen_D0, Gen_Dstar_all])  # This associates each candidate in an array with each candidate in the other array
-    
-            # Require the id for D0 mothers as the id for Dstar
-            Gen_D0Dstar = Gen_D0Dstar[Gen_D0Dstar.slot0.genPartIdxMother == Gen_D0Dstar.slot1.Id]
-            Gen_D0Dstar = Gen_D0Dstar[ak.num(Gen_D0Dstar) > 0]
-            
-            # Put the candidate D0 back to it array
-            Gen_D0OfDstar = ak.zip({
-                        'pt': Gen_D0Dstar.slot0.pt,
-                        'eta': Gen_D0Dstar.slot0.eta,
-                        'phi': Gen_D0Dstar.slot0.phi,
-                        'mass': Gen_D0Dstar.slot0.mass}, with_name="PtEtaPhiMCandidate")
-            
-            # This is the final Dstar we want
-            Gen_Dstar = ak.zip({
-                        'pt': Gen_D0Dstar.slot1.pt,
-                        'eta': Gen_D0Dstar.slot1.eta,
-                        'phi': Gen_D0Dstar.slot1.phi,
-                        'mass': Gen_D0Dstar.slot1.mass,
-                        'vx': Gen_D0Dstar.slot1.vx,
-                        'vy': Gen_D0Dstar.slot1.vy,
-                        'vz': Gen_D0Dstar.slot1.vz}, with_name="PtEtaPhiMCandidate")
-            Gen_Dstar = Gen_Dstar[ak.num(Gen_Dstar) == 3]
-
-            # test
-            """ asso = ak.cartesian([Gen_Dstar, Gen_Jpsi])    
-
-            asso = asso[(asso.slot0.vx == asso.slot1.vx) & (asso.slot0.vy == asso.slot1.vy) & (asso.slot0.vz == asso.slot1.vz) ]
-            asso = asso[ak.num(asso) > 0]
-            Gen_Dstar = ak.zip({
-                    'pt': asso.slot0.pt,
-                    'eta': asso.slot0.eta,
-                    'phi': asso.slot0.phi,
-                    'mass': asso.slot0.mass,
-                    'vx': asso.slot0.vx,
-                    'vy': asso.slot0.vy,
-                    'vz': asso.slot0.vz}, with_name="PtEtaPhiMCandidate")
-            Gen_Jpsi = ak.zip({
-                    'pt': asso.slot1.pt,
-                    'eta': asso.slot1.eta,
-                    'phi': asso.slot1.phi,
-                    'mass': asso.slot1.mass,
-                    'vx': asso.slot1.vx,
-                    'vy': asso.slot1.vy,
-                    'vz': asso.slot1.vz}, with_name="PtEtaPhiMCandidate") """
-
-            
-        elif (self.analysis_type == 'data'):
-            Gen_particles = ak.zip([[]])
               
         ############### Get All the interesting candidates from NTuples
         Dimu = ak.zip({**get_vars_dict(events, dimu_cols)}, with_name="PtEtaPhiMCandidate")
@@ -179,6 +76,8 @@ class EventSelectorProcessor(processor.ProcessorABC):
                         'charge': events.Dstar_pischg,
                         **get_vars_dict(events, dstar_cols)}, 
                         with_name="PtEtaPhiMCandidate")
+        '''for i in range(len(Muon)):
+            print(f"Muon ID:{Muon[i].Id}")'''
 
         output['cutflow']['Number of events'] += len(events)
         output['cutflow']['Number of Dimu'] += ak.sum(ak.num(Dimu))
@@ -232,53 +131,6 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Dimu = Dimu[muon_eta_cut]
         Muon = Muon[muon_eta_cut]
         output['cutflow']['Dimu muon eta cut'] += ak.sum(ak.num(Dimu))
-
-        ################################################################## Matching of the muon
-
-        Gen_Mu = ak.zip({'0': Gen_particles[Muon.slot0.simIdx], '1': Gen_particles[Muon.slot1.simIdx]})
-
-        
-        Muon1_Rec, Muon1_Gen = mc_matching(Muon.slot0, Gen_particles)
-        Muon2_Rec, Muon2_Gen = mc_matching(Muon.slot1, Gen_particles)
-
-        Gendimu_match_dimu = ak.zip([Muon1_Gen, Muon2_Gen])
-
-        Gendimu_same_mother = Gendimu_match_dimu[Gendimu_match_dimu.slot0.genPartIdxMother == Gendimu_match_dimu.slot1.genPartIdxMother]
-        Gendimu_same_mother = Gendimu_same_mother[Gendimu_same_mother.slot0.parpdgId == 443]
-
-        Muon1_Gen = ak.zip({
-            'pt': Gendimu_same_mother.slot0.pt,
-            'eta': Gendimu_same_mother.slot0.eta,
-            'phi': Gendimu_same_mother.slot0.phi,
-            'mass': Gendimu_same_mother.slot0.mass,
-            'Id' : Gendimu_same_mother.slot1.Id,
-            'pdgId': Gendimu_same_mother.slot0.pdgId,
-            'genPartIdxMother': Gendimu_same_mother.slot0.genPartIdxMother,
-            'parpdgId' : Gendimu_same_mother.slot0.parpdgId}, with_name="PtEtaPhiMCandidate")
-
-        Muon2_Gen = ak.zip({
-            'pt': Gendimu_same_mother.slot1.pt,
-            'eta': Gendimu_same_mother.slot1.eta,
-            'phi': Gendimu_same_mother.slot1.phi,
-            'mass': Gendimu_same_mother.slot1.mass,
-            'Id' : Gendimu_same_mother.slot1.Id,
-            'pdgId': Gendimu_same_mother.slot1.pdgId,
-            'genPartIdxMother': Gendimu_same_mother.slot1.genPartIdxMother,
-            'parpdgId' : Gendimu_same_mother.slot1.parpdgId}, with_name="PtEtaPhiMCandidate")
-   
-        Muon1_Rec, Muon1_Gen = mc_matching(Muon1_Rec, Muon1_Gen)
-        Muon2_Rec, Muon2_Gen = mc_matching(Muon2_Rec, Muon2_Gen)
-
-        Muon = ak.zip({'0': Muon[Dimu.t1muIdx], '1': Muon[Dimu.t2muIdx]})
-
-
-
-        
-        #dimu_pt_cut = (Dimu.pt > 22) & (Dimu.pt < 26)
-        #Dimu = Dimu[dimu_pt_cut]
-
-        #dimu_rap_cut = (Dimu.rap > 1.2) & (Dimu.rap < 1.8)
-        #Dimu = Dimu[dimu_rap_cut]
 
         Dimu['is_ups'] = (Dimu.mass > 8.5) & (Dimu.mass < 11.5)
         Dimu['is_jpsi'] = (Dimu.mass > 2.9) & (Dimu.mass < 3.3)
@@ -391,11 +243,6 @@ class EventSelectorProcessor(processor.ProcessorABC):
 
         Dstar['wrg_chg'] = (Dstar.Kchg == Dstar.pichg)
 
-        ############### Dimu Monte Carlo Matching
-        #rec, gen = mc_matching(Dimu, Gen_Jpsi)
-        #print(rec)
-        #print(gen)
-
         ############### Dimu + OpenCharm associations
 
         DimuDstar = association(Dimu, Dstar)
@@ -419,47 +266,6 @@ class EventSelectorProcessor(processor.ProcessorABC):
             primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(Primary_vertex[var]))
         output["Primary_vertex"] = primary_vertex_acc
 
-        # Gen Particles accumulator
-        gen_part_acc = processor.dict_accumulator({})
-        if (self.analysis_type == 'mc'):
-            for var in Gen_particles.fields:
-                gen_part_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_particles[var])))
-            gen_part_acc['nGenPart'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_particles))) 
-            output["Gen_particles"] = gen_part_acc
-
-        # Gen Muon accumulator
-        gen_muon_acc = processor.dict_accumulator({})
-        if (self.analysis_type == 'mc'):
-            for var in Gen_Muon.fields:
-                gen_muon_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_Muon[var])))
-            gen_muon_acc['nGenMuon'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_Muon))) 
-            output["Gen_Muon"] = gen_muon_acc
-
-        # Gen Jpsi accumulator
-        gen_jpsi_acc = processor.dict_accumulator({})
-        if (self.analysis_type == 'mc'):
-            for var in Gen_Jpsi.fields:
-                gen_jpsi_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_Jpsi[var])))
-            gen_jpsi_acc['nGenJpsi'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_Jpsi))) 
-            output["Gen_Jpsi"] = gen_jpsi_acc
-            
-        # Gen D0 accumulator
-        gen_d0_acc = processor.dict_accumulator({})
-        if (self.analysis_type == 'mc'):
-            for var in Gen_D0.fields:
-                gen_d0_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_D0[var])))
-            gen_d0_acc['nGenD0'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_D0[var])))
-            output["Gen_D0"] = gen_d0_acc
-
-        # Gen Dstar accumulator
-        gen_dstar_acc = processor.dict_accumulator({})
-        if (self.analysis_type == 'mc'):
-            for var in Gen_Dstar.fields:
-                gen_dstar_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_Dstar[var])))
-            gen_dstar_acc['nGenDstar'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_Dstar[var])))
-            output["Gen_Dstar"] = gen_dstar_acc
-            
-    
         muon_lead_acc = processor.dict_accumulator({})
         for var in Muon_lead.fields:
             muon_lead_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Muon_lead[var])))

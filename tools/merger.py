@@ -23,7 +23,10 @@ def merger(name):
         if (idx == 0): 
             acc = load(file_list[0])
         else:
-            acc += load(f)
+            try:
+                acc += load(f) # This could cause a problem when the array is []
+            except:
+                pass
         os.system("rm -rf " + f)
 
     #finally saving the merged file into the folder merged/
