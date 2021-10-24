@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from coffea.util import save
 from nanoAODplus_processor.MonteCarloHistogramingProcessor import MonteCarloHistogramingProcessor
-#from nanoAODplus_processor.DataHistogramingProcessor import DataHistogramingProcessor
+from nanoAODplus_processor.HistogramingProcessor import HistogramingProcessor
 
 def plotter(name, analysis_type):
     print("Starting plots creation")

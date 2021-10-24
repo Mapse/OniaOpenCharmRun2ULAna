@@ -12,8 +12,6 @@ from tools.collections import *
 
 D0_PDG_MASS = 1.864
 
-loose = 0
-
 def association(cand1, cand2):
     ''' Function for association of the particles. The cuts that operates on all of them and 
     computation of quantities can go here. individual cuts can go on the main processing'''
@@ -65,7 +63,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         if len(events) == 0:
             return output
 
-        ############### Get the main primary vertex properties ############### 
+        ############### Get the primary vertices ############### 
         Primary_vertex = ak.zip({**get_vars_dict(events, primary_vertex_cols)})
               
         ############### Get All the interesting candidates from NTuples
@@ -76,19 +74,40 @@ class EventSelectorProcessor(processor.ProcessorABC):
                         'charge': events.Dstar_pischg,
                         **get_vars_dict(events, dstar_cols)}, 
                         with_name="PtEtaPhiMCandidate")
-        '''for i in range(len(Muon)):
-            print(f"Muon ID:{Muon[i].Id}")'''
+        # Triggers for 2017 charmonium.
+        hlt_char_2017 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2017)})
 
         output['cutflow']['Number of events'] += len(events)
         output['cutflow']['Number of Dimu'] += ak.sum(ak.num(Dimu))
         output['cutflow']['all D0']      += ak.sum(ak.num(D0))
         output['cutflow']['all Dstar']   += ak.sum(ak.num(Dstar))
 
+        ##### Vertices cut
+        #good_pvtx = Primary_vertex['isGood']
+        #Primary_vertex = Primary_vertex[good_pvtx]
+
+        ##### Trigger cut
+
+        # Activate trigger
+        hlt = False
+        # HLT to be used
+        hlt_filter = 'HLT_Dimuon25_Jpsi'
+        
+        # Trigger choice
+        if hlt:
+            print(f"You are running with the trigger: {hlt_filter}")
+            trigger_cut = hlt_char_2017[hlt_filter]
+        if not hlt:
+            print("You are not running with trigger")
+            # Assign 1 to all events.
+            trigger_cut = np.ones(len(Dimu), dtype=bool)
+
         ############### Dimu cuts charge = 0, mass cuts and chi2...
+        Dimu = Dimu[trigger_cut]
         Dimu = Dimu[Dimu.charge == 0]
         output['cutflow']['Dimu 0 charge'] += ak.sum(ak.num(Dimu))
 
-        Dimu = Dimu[((Dimu.mass > 8.5) & (Dimu.mass < 11.5)) | ((Dimu.mass > 2.9) & (Dimu.mass < 3.3)) | ((Dimu.mass > 3.35) & (Dimu.mass < 4.05))]
+        Dimu = Dimu[((Dimu.mass > 8.5) & (Dimu.mass < 11.5)) | ((Dimu.mass > 2.95) & (Dimu.mass < 3.25)) | ((Dimu.mass > 3.35) & (Dimu.mass < 4.05))]
         output['cutflow']['Quarkonia mass'] += ak.sum(ak.num(Dimu))
         
         # Prompt/nomprompt cut for jpsi
@@ -102,6 +121,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         #Dimu = Dimu[dimuon_pointing_cut]
 
         ############### Get the Muons from Dimu, for cuts in their params
+        Muon = Muon[trigger_cut]
         Muon = ak.zip({'0': Muon[Dimu.t1muIdx], '1': Muon[Dimu.t2muIdx]})
 
         # SoftId and Global Muon cuts
@@ -110,19 +130,16 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Muon = Muon[soft_id]
         output['cutflow']['Dimu muon softId'] += ak.sum(ak.num(Dimu))
 
-        global_muon = (Muon.slot0.isGlobal > 0) & (Muon.slot1.isGlobal > 0)
-        Dimu = Dimu[global_muon]
-        Muon = Muon[global_muon]
-        output['cutflow']['Dimu muon global'] += ak.sum(ak.num(Dimu))
+        #!!!!!!!!!!!!!!!!! We decided to remove the global cuts !!!!!!!! #
+
+        #global_muon = (Muon.slot0.isGlobal > 0) & (Muon.slot1.isGlobal > 0)
+        #Dimu = Dimu[global_muon]
+        #Muon = Muon[global_muon]
+        #output['cutflow']['Dimu muon global'] += ak.sum(ak.num(Dimu))
 
         # pt and eta cuts
-        if loose:
-            muon_pt_cut = (Muon.slot0.pt > 1) & (Muon.slot1.pt > 1)
-
-        else:
-            
-            muon_pt_cut = (Muon.slot0.pt > 3) & (Muon.slot1.pt > 3)
-        
+    
+        muon_pt_cut = (Muon.slot0.pt > 3) & (Muon.slot1.pt > 3)
         Dimu = Dimu[muon_pt_cut]
         Muon = Muon[muon_pt_cut]
         output['cutflow']['Dimu muon pt cut'] += ak.sum(ak.num(Dimu))
@@ -137,69 +154,41 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Dimu['is_psi'] = (Dimu.mass > 3.35) & (Dimu.mass < 4.05)
 
         ############### Cuts for D0
+        D0 = D0[trigger_cut]
         D0 = D0[~D0.hasMuon]
         D0noncut = D0
         output['cutflow']['D0 trk muon cut'] += ak.sum(ak.num(D0))
+    
+        D0 = D0[(D0.t1pt > 0.8) & (D0.t2pt > 0.8)]
+        output['cutflow']['D0 trk pt cut'] += ak.sum(ak.num(D0))
 
-        if loose:
-            D0 = D0[(D0.t1pt > 0.4) & (D0.t2pt > 0.4)]
-            output['cutflow']['D0 trk pt cut'] += ak.sum(ak.num(D0))
+        D0 = D0[(D0.t1chindof < 2.5) & (D0.t2chindof < 2.5)]
+        output['cutflow']['D0 trk chi2 cut'] += ak.sum(ak.num(D0))
 
-            D0 = D0[(D0.t1chindof < 4) & (D0.t2chindof < 4)]
-            output['cutflow']['D0 trk chi2 cut'] += ak.sum(ak.num(D0))
+        D0 = D0[(D0.t1nValid > 4) & (D0.t2nValid > 4) & (D0.t1nPix > 1) & (D0.t1nPix > 1)]
+        output['cutflow']['D0 trk hits cut'] += ak.sum(ak.num(D0))
 
-            D0 = D0[(D0.t1nValid > 2) & (D0.t2nValid > 2) & (D0.t1nPix > 1) & (D0.t2nPix > 1)]
-            output['cutflow']['D0 trk hits cut'] += ak.sum(ak.num(D0))
+        D0 = D0[(D0.t1dxy < 0.1) & (D0.t2dxy < 0.1)]
+        output['cutflow']['D0 trk dxy cut'] += ak.sum(ak.num(D0))
 
-            D0 = D0[(D0.t1dxy < 0.1) & (D0.t2dxy < 0.1)]
-            output['cutflow']['D0 trk dxy cut'] += ak.sum(ak.num(D0))
+        D0 = D0[(D0.t1dz < 1.) & (D0.t2dz < 1.)]
+        output['cutflow']['D0 trk dz cut'] += ak.sum(ak.num(D0))
 
-            D0 = D0[(D0.t1dz < 1.) & (D0.t2dz < 1.)]
-            output['cutflow']['D0 trk dz cut'] += ak.sum(ak.num(D0))
-        
-        else:
-            
-            D0 = D0[(D0.t1pt > 0.8) & (D0.t2pt > 0.8)]
-            output['cutflow']['D0 trk pt cut'] += ak.sum(ak.num(D0))
-
-            D0 = D0[(D0.t1chindof < 2.5) & (D0.t2chindof < 2.5)]
-            output['cutflow']['D0 trk chi2 cut'] += ak.sum(ak.num(D0))
-
-            D0 = D0[(D0.t1nValid > 4) & (D0.t2nValid > 4) & (D0.t1nPix > 1) & (D0.t1nPix > 1)]
-            output['cutflow']['D0 trk hits cut'] += ak.sum(ak.num(D0))
-
-            D0 = D0[(D0.t1dxy < 0.1) & (D0.t2dxy < 0.1)]
-            output['cutflow']['D0 trk dxy cut'] += ak.sum(ak.num(D0))
-
-            D0 = D0[(D0.t1dz < 1.) & (D0.t2dz < 1.)]
-            output['cutflow']['D0 trk dz cut'] += ak.sum(ak.num(D0))
-
-        # D0 cosphi
-        if loose:
-            D0 = D0[D0.cosphi > 0.1]
-
-        else:
-
-            D0 = D0[D0.cosphi > 0.99]
+        D0 = D0[D0.cosphi > 0.99]
         output['cutflow']['D0 cosphi cut'] += ak.sum(ak.num(D0))
 
         # D0 dl Significance
-        if loose:
-            D0 = D0[D0.dlSig > 5.]
-        else:
-
-            D0 = D0[D0.dlSig > 5.]
+        #D0 = D0[D0.dlSig > 0]
         output['cutflow']['D0 dlSig cut'] += ak.sum(ak.num(D0))
 
         # D0 pt
         D0 = D0[D0.pt > 3.]
         output['cutflow']['D0 pt cut'] += ak.sum(ak.num(D0))
 
-        #D0 = D0noncut
-
         ############### Cuts for Dstar
 
         # trks cuts
+        Dstar = Dstar[trigger_cut]
         Dstar = Dstar[~Dstar.hasMuon]
         output['cutflow']['Dstar trk muon cut'] += ak.sum(ak.num(Dstar))
 
@@ -260,10 +249,20 @@ class EventSelectorProcessor(processor.ProcessorABC):
 
         ############### Create the accumulators to save output
 
+        ## Trigger accumulator
+
+        # 2017 triggers
+        trigger_2017_acc = processor.dict_accumulator({})
+        for var in hlt_char_2017.fields:
+            trigger_2017_acc[var] = processor.column_accumulator(ak.to_numpy(hlt_char_2017[var]))
+        output["HLT_2017"] = trigger_2017_acc
+
         # Primary vertex accumulator
         primary_vertex_acc = processor.dict_accumulator({})
         for var in Primary_vertex.fields:
             primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(Primary_vertex[var]))
+            #primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Primary_vertex[var])))
+        #primary_vertex_acc["nPV"] = processor.column_accumulator(ak.to_numpy(ak.num(Primary_vertex[var]))) 
         output["Primary_vertex"] = primary_vertex_acc
 
         muon_lead_acc = processor.dict_accumulator({})

@@ -23,7 +23,7 @@ def merg_files(path, name):
         typ = 'hists.coffea'
         sv = 'hists'
     else:
-        print("You should provide an option: -d for merge data files or -h to merge the hist files")
+        print("You should provide an option: -d for merge data files or -p to merge the hist files")
 
     files = []
     with os.scandir(path) as aux:
@@ -33,16 +33,40 @@ def merg_files(path, name):
     # Takes the first to start the accumulator
     acc = load(files[0])
     # Take the length of the list
-    le_files = len(files) # int(round(len(files), 0))
+    
+    if args.data:
+        le_files = int(round(len(files)/2, 0))
+    elif args.hist:
+        le_files = len(files) 
 
     # For accumulate the files
-    for i in tqdm(range(1, le_files), desc="Processing", unit="files"):
-        acc += load(files[i])
-    save(acc, sv + '_' + name + '.coffea')
+    if args.data:
+        #print("First half")
+        for i in tqdm(range(1179, 1570), desc="Processing", unit="files"):
+            acc += load(files[i])
+        save(acc, sv + '_' + name + '.coffea')
+        
+    if args.hist:
+        for i in tqdm(range(1, le_files), desc="Processing", unit="files"):
+            acc += load(files[i])
+        save(acc, sv + '_' + name + '.coffea')
+
     print ("Finished")
 
 merg_files(path, name)
 
+
+########### Sketch
+
+""" acc = load(sv + '_' + name + '.coffea')
+print("Last half")
+if isinstance(le_files, int):
+    lim = 2 * le_files 
+elif isinstance(le_files, float):
+    lim = 2 * (le_files - 1)       
+for i in tqdm(range(le_files+1, lim), desc="Processing", unit="files"):
+    acc += load(files[i])
+save(acc, sv + '_' + name + '.coffea') """
 
  
 

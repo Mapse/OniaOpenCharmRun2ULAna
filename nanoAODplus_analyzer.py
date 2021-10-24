@@ -37,17 +37,17 @@ if (args.select or args.analyze):
 
     tstart = time.time()
     
-    #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][0:1]}
+    #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][:]}
     #files = {'Charmonium_new2017AOD': filesets['Charmonium_new2017AOD'][0:1]}
 
-    #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][0:1]}
+    #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][:]}
     #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][:]}
     files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:]}
+    #files = {'MonteCarlo2018AOD': filesets['MonteCarlo2018AOD'][:]}
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)
     os.system("rm -rf output/" + args.name + "/*")
-
          
     if config_yaml['executor'] == 'futures_executor': 
         
@@ -79,3 +79,11 @@ if (args.merge or args.analyze):
 if (args.plots or args.analyze):
     from tools.plotter import plotter
     plotter(args.name, analysis_type)    
+
+
+
+
+
+
+
+   

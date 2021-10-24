@@ -75,7 +75,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         if len(events) == 0:
             return output
 
-        ############### Get the main primary vertex properties ############### 
+        ############### Get the primary vertices  ############### 
         Primary_vertex = ak.zip({**get_vars_dict(events, primary_vertex_cols)})
 
         ############### Get the gen particles ############### 
@@ -95,35 +95,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         # Gen Dstar
         Gen_Dstar_all = Gen_particles[(Gen_particles.pdgId == 413) | (Gen_particles.pdgId == -413)]
         Gen_Dstar = Gen_Dstar_all
-        
-        # Forces it to has only two daughters
-        #Gen_Dstar_all = Gen_Dstar_all[Gen_Dstar_all.numberOfDaughters == 2]
-                    
-        # Dstar daughters: D0
-        """ Gen_D0Dstar = ak.cartesian([Gen_D0, Gen_Dstar_all])  # This associates each candidate in an array with each candidate in the other array
-
-        # Require the id for D0 mothers as the id for Dstar
-        Gen_D0Dstar = Gen_D0Dstar[Gen_D0Dstar.slot0.genPartIdxMother == Gen_D0Dstar.slot1.Id]
-        Gen_D0Dstar = Gen_D0Dstar[ak.num(Gen_D0Dstar) > 0]
-        
-        # Put the candidate D0 back to its array
-        Gen_D0OfDstar = ak.zip({
-                    'pt': Gen_D0Dstar.slot0.pt,
-                    'eta': Gen_D0Dstar.slot0.eta,
-                    'phi': Gen_D0Dstar.slot0.phi,
-                    'mass': Gen_D0Dstar.slot0.mass}, with_name="PtEtaPhiMCandidate")
-        
-        # This is the final Dstar we want
-        Gen_Dstar = ak.zip({
-                    'pt': Gen_D0Dstar.slot1.pt,
-                    'eta': Gen_D0Dstar.slot1.eta,
-                    'phi': Gen_D0Dstar.slot1.phi,
-                    'mass': Gen_D0Dstar.slot1.mass,
-                    'vx': Gen_D0Dstar.slot1.vx,
-                    'vy': Gen_D0Dstar.slot1.vy,
-                    'vz': Gen_D0Dstar.slot1.vz}, with_name="PtEtaPhiMCandidate")
-        Gen_Dstar = Gen_Dstar[ak.num(Gen_Dstar) == 3] """
-                      
+                              
         ############### Get All the interesting candidates from NTuples
         Dimu = ak.zip({**get_vars_dict(events, dimu_cols)}, with_name="PtEtaPhiMCandidate")
         Muon = ak.zip({**get_vars_dict(events, muon_cols)}, with_name="PtEtaPhiMCandidate")
@@ -132,13 +104,35 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
                         'charge': events.Dstar_pischg,
                         **get_vars_dict(events, dstar_cols)}, 
                         with_name="PtEtaPhiMCandidate")
-        
+        hlt_char_2017 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2017)})
+                     
         output['cutflow']['Number of events'] += len(events)
         output['cutflow']['Number of Dimu'] += ak.sum(ak.num(Dimu))
         output['cutflow']['all D0']      += ak.sum(ak.num(D0))
         output['cutflow']['all Dstar']   += ak.sum(ak.num(Dstar))
 
+        ##### Vertices cut
+        #good_pvtx = Primary_vertex['isGood']
+        #Primary_vertex = Primary_vertex[good_pvtx]
+
+        ##### Trigger cut
+
+        # Activate trigger
+        hlt = False
+        # HLT to be used
+        hlt_filter = 'HLT_Dimuon25_Jpsi'
+
+        # Trigger choice
+        if hlt:
+            print(f"You are running with the trigger: {hlt_filter}")
+            trigger_cut = hlt_char_2017[hlt_filter] == 1
+        if not hlt:
+            print("You are not running with trigger")
+            # Assign 1 to all events.
+            trigger_cut = np.ones(len(Dimu), dtype=bool)
+
         ############### Dimu cuts charge = 0, mass cuts and chi2...
+        Dimu = Dimu[trigger_cut]
         Dimu = Dimu[Dimu.charge == 0]
         output['cutflow']['Dimu 0 charge'] += ak.sum(ak.num(Dimu))
 
@@ -156,6 +150,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         #Dimu = Dimu[dimuon_pointing_cut]
 
         ############### Get the Muons from Dimu, for cuts in their params
+        Muon = Muon[trigger_cut]
         Muon = ak.zip({'0': Muon[Dimu.t1muIdx], '1': Muon[Dimu.t2muIdx]})
 
         # SoftId and Global Muon cuts
@@ -164,10 +159,12 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         Muon = Muon[soft_id]
         output['cutflow']['Dimu muon softId'] += ak.sum(ak.num(Dimu))
 
-        global_muon = (Muon.slot0.isGlobal > 0) & (Muon.slot1.isGlobal > 0)
-        Dimu = Dimu[global_muon]
-        Muon = Muon[global_muon]
-        output['cutflow']['Dimu muon global'] += ak.sum(ak.num(Dimu))
+        #!!!!!!!!!!!!!!!!! We decided to remove the global cuts !!!!!!!! #
+
+        #global_muon = (Muon.slot0.isGlobal > 0) & (Muon.slot1.isGlobal > 0)
+        #Dimu = Dimu[global_muon]
+        #Muon = Muon[global_muon]
+        #output['cutflow']['Dimu muon global'] += ak.sum(ak.num(Dimu))
 
         # pt and eta cuts
         if loose:
@@ -207,6 +204,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         #Dimu_match['is_psi'] = (Dimu_match.mass > 3.35) & (Dimu_match.mass < 4.05)
 
         ############### Cuts for D0
+        D0 = D0[trigger_cut]
         D0 = D0[~D0.hasMuon]
         D0noncut = D0
         output['cutflow']['D0 trk muon cut'] += ak.sum(ak.num(D0))
@@ -272,6 +270,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         ############### Cuts for Dstar
 
         # trks cuts
+        Dstar = Dstar[trigger_cut]
         Dstar = Dstar[~Dstar.hasMuon]
         output['cutflow']['Dstar trk muon cut'] += ak.sum(ak.num(Dstar))
 
@@ -316,15 +315,47 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         Dstar['wrg_chg'] = (Dstar.Kchg == Dstar.pichg)
 
         #################### Dstar Matching
+
+        # Trigger filter
+        Gen_Dstar_all = Gen_Dstar_all[trigger_cut]
         
+        # If statment to avoid null array.
         if (ak.sum(ak.num(Dstar)) != 0):
+            # Associate each gen and each reco Dstar
             Dstar_match = ak.cartesian([Dstar, Gen_Dstar_all])
+            # Association using Ids.
             Dstar_match = Dstar_match[Dstar_match.slot0.simIdx == Dstar_match.slot1.Id]
+            # Remove null events.
             Dstar_match= Dstar_match[ak.num(Dstar_match) > 0]
         else:
             Dstar_match = ak.cartesian([Dstar, Gen_Dstar_all])    
             Dstar_match = Dstar_match[ak.num(Dstar_match) > 0]
             
+        ## Build the associated candidates
+        
+        # Dimu + Dstar
+        asso = ak.cartesian([Dimu, Dstar])
+        asso = asso[ak.num(asso) > 0]
+        
+        Dimu_asso = ak.zip({
+                   'pt': asso.slot0.pt,
+                   'eta': asso.slot0.eta,
+                   'phi': asso.slot0.phi,
+                   'mass': asso.slot0.mass,
+                   'charge': asso.slot0.charge}, with_name="PtEtaPhiMCandidate")
+       
+        Dstar_asso = ak.zip({
+                    'pt': asso.slot1.pt,
+                    'eta': asso.slot1.eta,
+                    'phi': asso.slot1.phi,
+                    'mass': asso.slot1.mass,
+                    'charge': asso.slot1.charge}, with_name="PtEtaPhiMCandidate")
+        
+        asso['deltarap'] = asso.slot0.rap - asso.slot1.rap
+        asso['cand'] = Dimu_asso + Dstar_asso
+
+        DimuDstar = asso
+
         ############### Final computation of number of objects
         output['cutflow']['Dimu final']    += ak.sum(ak.num(Dimu))
         output['cutflow']['Dimu final']    += ak.sum(ak.num(Dimu_match))
@@ -343,6 +374,8 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         primary_vertex_acc = processor.dict_accumulator({})
         for var in Primary_vertex.fields:
             primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(Primary_vertex[var]))
+            #primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Primary_vertex[var])))
+        #primary_vertex_acc["nPV"] = processor.column_accumulator(ak.to_numpy(ak.num(Primary_vertex[var]))) 
         output["Primary_vertex"] = primary_vertex_acc
 
         # Gen Particles accumulator
@@ -462,6 +495,28 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         output["Dstar_match"] = Dstar_match_acc
         output["Dstar_match_D0"] = Dstar_match_D0_acc
         output["Dstar_match_trk"] = Dstar_trk_acc
+        
+
+        # Accumulator for the associated candidates
+        DimuDstar_acc = processor.dict_accumulator({})
+        DimuDstar_acc['Dimu'] = processor.dict_accumulator({})
+        DimuDstar_acc['Dstar'] = processor.dict_accumulator({})
+        for var in DimuDstar.fields:
+            if (var == '0') or (var =='1'):
+                continue
+            elif var == 'cand':
+                for i0 in DimuDstar[var].fields:
+                    DimuDstar_acc[i0] = processor.column_accumulator(ak.to_numpy(ak.flatten(DimuDstar[var][i0])))
+            else:
+                DimuDstar_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(DimuDstar[var])))
+
+        for var in DimuDstar.slot0.fields:
+            DimuDstar_acc['Dimu'][var] = processor.column_accumulator(ak.to_numpy(ak.flatten(DimuDstar.slot0[var])))
+
+        for var in DimuDstar.slot1.fields:
+            DimuDstar_acc['Dstar'][var] = processor.column_accumulator(ak.to_numpy(ak.flatten(DimuDstar.slot1[var])))
+        DimuDstar_acc['nDimuDstar'] = processor.column_accumulator(ak.to_numpy(ak.num(DimuDstar)))
+        output['DimuDstar'] = DimuDstar_acc
 
         file_hash = str(random.getrandbits(128)) + str(len(events))
         save(output, "output/" + self.analyzer_name + "/" + self.analyzer_name + "_" + file_hash + ".coffea")

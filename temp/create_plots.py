@@ -15,7 +15,14 @@ def get_dstar_weight(hist_dstar, hist_wrg_chg):
     hist_dstar_values = hist_dstar_values[x:]
     hist_wrg_chg_values = hist_wrg_chg_values[x:]
 
+    
+
     ratio = hist_dstar_values/hist_wrg_chg_values
+
+    # Remove the infinity values (when there is no enough data)
+    ratio = ratio[np.isfinite(ratio)]
+
+    
 
     return ratio.mean()
 

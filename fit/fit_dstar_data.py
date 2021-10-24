@@ -1,6 +1,12 @@
 import ROOT
 import math
 import argparse
+from tqdm import tqdm
+
+import config_fit_dstar_data as config
+
+# Enable multicore
+ROOT.EnableImplicitMT()
 
 ## Argparse section
 parser = argparse.ArgumentParser(description='Dstar fit')
@@ -9,19 +15,35 @@ parser.add_argument("-f", "--fit", help="Fit the data", action="store_true")
 parser.add_argument("-y", "--yields", help="Calculate the yields and the value of signal/sqrt(background)", action="store_true")
 parser.add_argument("-p", "--pull", help="Pull histogram", action="store_true")
 parser.add_argument("-c", "--chi", help="Calculate the Chi square reduced", action="store_true")
+parser.add_argument("-t", "--testfit", help="Fit for one specific files", action="store_true")
+parser.add_argument("-s", "--severaldata", help="Fit for files from the ERAS", action="store_true")
 
 args = parser.parse_args()
 
-# Root file with data 
-file = ROOT.TFile.Open("../output/Charmonium2018B_test/dstar_charmonium_2018B.root")
 
-def fit_Dstar(file=file):
+def fit_Dstar():
+
+    # Root file with data
+    if (args.testfit): 
+        file = ROOT.TFile.Open(config.dict_fls["save_path_single_file"])
+        rootdata = file.Dstar
+
+    if (args.severaldata):
+        chain = ROOT.TChain("Dstar")
+        for i in tqdm(config.dict_fls["eras"], desc="Loading", unit="eras", total=len(config.dict_fls["eras"])):
+         
+            dtset = config.dict_fls["dataset"] + i
+            save_path = config.dict_fls["save_path"]
+            chain.Add(save_path + dtset + "_Dstar_deltamr.root")
+        rootdata = chain
+    
+    ### Fitting part
     
     # Mass observable
-    mass = ROOT.RooRealVar("mass", "", 0.14, 0.16)
+    mass = ROOT.RooRealVar("deltam", "", 0.14, 0.16)
 
     # Dataset creation
-    data = ROOT.RooDataSet("data", "", file.Dstar, ROOT.RooArgSet(mass))
+    data = ROOT.RooDataSet("data", "", rootdata, ROOT.RooArgSet(mass))
 
     ## Signal definition
 
@@ -43,9 +65,9 @@ def fit_Dstar(file=file):
 
     # Phenomenological threshold function
 
-    p0 = ROOT.RooRealVar("pzeroz","", 2.7e-3, 0.001, 5)
-    p1 = ROOT.RooRealVar('pone',"", -2.4e-1, -4, 4)
-    p2 = ROOT.RooRealVar('ptwo',"", 5, 3, 6)
+    p0 = ROOT.RooRealVar("p0","", 2.7e-3, 0.001, 5)
+    p1 = ROOT.RooRealVar('p1',"", -2.4e-1, -4, 4)
+    p2 = ROOT.RooRealVar('p2',"", 5, 3, 6)
 
     # Background pdf definition
     back = ROOT.RooGenericPdf("Phen thrs func","","(1 - exp(-(@0 -0.13957)/@1)) * (@0/0.13957)**@2 + @3 * (@0/0.13957 - 1)", ROOT.RooArgList(mass,p0,p1,p2))
@@ -59,15 +81,11 @@ def fit_Dstar(file=file):
 
     ################ Plots - Normal scale ################
 
-    # Colors and styles
-    colors = {"model" : 2, "signal" : 4, "background" : 3}
-    styles = {"model" : 1, "signal" : 1, "background" : 2}
-
     # Canvas Definition
     can = ROOT.TCanvas("can", "histograms", 850, 650)
 
     # Frame creation
-    frame1 = mass.frame(ROOT.RooFit.Title("Dataset: Charmonium 2018B"), ROOT.RooFit.Bins(99))
+    frame1 = mass.frame() #ROOT.RooFit.Title("Dataset: Charmonium 2018B"), ROOT.RooFit.Bins(99))
     frame1.GetXaxis().SetTitle("M(k\pi\pi_s) - M(k\pi) [GeV]")
     frame1.GetXaxis().SetLimits(0.138, 0.16)
 
@@ -75,13 +93,13 @@ def fit_Dstar(file=file):
     data.plotOn(frame1, ROOT.RooFit.Name("Data"), ROOT.RooFit.DataError(ROOT.RooAbsData.SumW2))
 
     # Signal
-    model.plotOn(frame1, ROOT.RooFit.Name("Signal"), ROOT.RooFit.Components("*gauss*"), ROOT.RooFit.LineStyle(styles["signal"]), ROOT.RooFit.LineColor(colors["signal"]))
+    model.plotOn(frame1, ROOT.RooFit.Name("Signal"), ROOT.RooFit.Components("*gauss*"), ROOT.RooFit.LineStyle(config.styles["signal"]), ROOT.RooFit.LineColor(config.colors["signal"]))
 
     # Background
-    model.plotOn(frame1, ROOT.RooFit.Name("Background"), ROOT.RooFit.Components("Phen thrs func"), ROOT.RooFit.LineStyle(styles["background"]), ROOT.RooFit.LineColor(colors["background"]))
+    model.plotOn(frame1, ROOT.RooFit.Name("Background"), ROOT.RooFit.Components("Phen thrs func"), ROOT.RooFit.LineStyle(config.styles["background"]), ROOT.RooFit.LineColor(config.colors["background"]))
 
     # Model
-    model.plotOn(frame1, ROOT.RooFit.Name("Model"), ROOT.RooFit.LineStyle(styles["model"]), ROOT.RooFit.LineColor(colors["model"]))
+    model.plotOn(frame1, ROOT.RooFit.Name("Model"), ROOT.RooFit.LineStyle(config.styles["model"]), ROOT.RooFit.LineColor(config.colors["model"]))
 
     ## ChiSquare computation
     n_param = result.floatParsFinal().getSize()
@@ -100,36 +118,35 @@ def fit_Dstar(file=file):
     frame1.Draw()
     leg.Draw("same")
 
-    # Draw the canvas
-        
+    ## Draw the canvas
 
     # Save the image
-    can.SaveAs("Dstar_data_fit.png")
+    can.SaveAs(config.dict_fls["save_fit"])
 
     # Log plot
     ROOT.gPad.SetLogy()
 
     can.Draw()
 
-    can.SaveAs("Dstar_fit_yaxislog.png")
+    can.SaveAs(config.dict_fls["save_fit_log"])
 
     # To save workspace
-    wspace = ROOT.RooWorkspace("Dstar_fit")
+    wspace = ROOT.RooWorkspace(config.dict_fls["wspace_name"])
 
     getattr(wspace, "import")(data)
     getattr(wspace, "import")(model)
     getattr(wspace, "import")(reduce_chi_square)
 
-    wspace.writeToFile("Dstar_fit.root")
+    wspace.writeToFile(config.dict_fls["wspace_root"])
 
 ## Function to yields computation
 
-def calc_yields(file="Dstar_fit.root"):
+def calc_yields(file=config.dict_fls["wspace_root"]):
 
     # File with Dstar fit 
     file_fit = ROOT.TFile.Open(file)
     # Workspace
-    w = file_fit.Get("Dstar_fit")
+    w = file_fit.Get(config.dict_fls["wspace_name"])
 
     # Calculations
     # Number of signal events: Nsignal = Ntotal * [fgauss1 + (1 - fgauss1) * fgauss2]
@@ -150,26 +167,23 @@ def calc_yields(file="Dstar_fit.root"):
     print(f"The number of background events is: {nbackground}")
     print(f"The number of s/sqrt(b) is : {ratio}")
 
-def pull_dist(file="Dstar_fit.root"):
+def pull_dist(file=config.dict_fls["wspace_root"]):
 
     file_fit = ROOT.TFile.Open(file)
     print("Generating pull histogram...")
-    w = file_fit.Get("Dstar_fit")
+    w = file_fit.Get(config.dict_fls["wspace_name"])
 
     model = w.pdf("model")
     data = w.data("data")
-    mass = w.var("mass") 
-
-    colors = {"model" : 2, "signal" : 4, "background" : 3}
-    styles = {"model" : 1, "signal" : 1, "background" : 2}
+    mass = w.var("deltam") 
 
     can = ROOT.TCanvas("can", "histograms", 850, 650)
     can.Divide(2)
 
-    frame1 = mass.frame(ROOT.RooFit.Title("Dataset: Charmonium 2018B"))
+    frame1 = mass.frame(ROOT.RooFit.Title("Pull"))
     
     data.plotOn(frame1, ROOT.RooFit.Name("Data"), ROOT.RooFit.DataError(ROOT.RooAbsData.SumW2))
-    model.plotOn(frame1, ROOT.RooFit.Name("Model"), ROOT.RooFit.LineStyle(styles["model"]), ROOT.RooFit.LineColor(colors["model"]))
+    model.plotOn(frame1, ROOT.RooFit.Name("Model"), ROOT.RooFit.LineStyle(config.styles["model"]), ROOT.RooFit.LineColor(config.colors["model"]))
 
     can.cd(1)
     frame1.Draw()
@@ -184,28 +198,28 @@ def pull_dist(file="Dstar_fit.root"):
     frame2.Draw()
     can.Draw()
 
-    can.SaveAs("Dstar_fit_pull.png") 
+    can.SaveAs(config.dict_fls["save_pull"]) 
 
-def calc_chi_reduced(file="Dstar_fit.root"):
+def calc_chi_reduced(file=config.dict_fls["wspace_root"]):
     
     file_fit = ROOT.TFile.Open(file)
-    w = file_fit.Get("Dstar_fit")
+    w = file_fit.Get(config.dict_fls["wspace_name"])
 
     chi = w.var("chi").getVal()
 
     print(f"Reduced chi square: {chi}")
   
 if (args.fit):
-    fit_Dstar(file=file)
+    fit_Dstar()
 
 if (args.yields):
-    calc_yields(file="Dstar_fit.root")
+    calc_yields()
 
 if (args.pull):
-    pull_dist(file="Dstar_fit.root")
+    pull_dist()
 
 if (args.chi):
-    calc_chi_reduced(file="Dstar_fit.root")
+    calc_chi_reduced()
 
 
 

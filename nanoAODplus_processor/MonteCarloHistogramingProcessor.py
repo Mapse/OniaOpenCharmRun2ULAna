@@ -16,7 +16,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         self.analyzer_name = analyzer_name
         
         self._accumulator = processor.dict_accumulator({
-            'Primary_vertex_npvs': hist.Hist("Events", hist.Bin("npvs", "Num reconstructed vertex", 50, 0, 100)), 
+            'PV_npvs': hist.Hist("Events", hist.Bin("npvs", "Num of primary vertex", 50, 0, 100)), 
             'Muon_lead_p': hist.Hist("Events", 
                                    hist.Bin("pt", "$p_{T,\mu}$ [GeV]", 100, 0, 100),
                                    hist.Bin("eta", "$\eta_{\mu}$", 60, -2.5, 2.5),
@@ -290,6 +290,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         Dstar_acc = acc['Dstar']
         Dstar_match_acc = acc['Dstar_match']
         Dstar_trk_acc = acc['Dstar_trk']
+        DimuDstar_acc = acc['DimuDstar']
        
         Primary_vertex_acc = acc['Primary_vertex']        
 
@@ -300,7 +301,11 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         Gen_Ups1S_acc = acc['Gen_Ups1S']
         Gen_Dstar_acc = acc['Gen_Dstar']
         Gen_D0_acc = acc['Gen_D0']
+
+        dlSig = (DimuDstar_acc['Dimu']['dlSig'].value < 100000) 
         
+        
+        DimuDstar_p4 = build_p4(DimuDstar_acc)
 
         ########## Filling histograms
         
@@ -330,7 +335,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
                              phi=Gen_D0_acc['phi'].value)
             
         # Primary vertex
-        output['Primary_vertex_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
+        output['PV_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
         
         #Muon
         output['Muon_lead_p'].fill(pt=Muon_lead_acc['pt'].value,
@@ -468,6 +473,37 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         output['Dstar_match_deltamr'].fill(chg='wrong charge', deltamr=Dstar_match_acc['deltamr'].value[Dstar_match_acc['wrg_chg'].value])
         output['Dstar_match_deltam'].fill(chg='right charge', deltam=Dstar_match_acc['deltam'].value[~Dstar_match_acc['wrg_chg'].value])
         output['Dstar_match_deltam'].fill(chg='wrong charge', deltam=Dstar_match_acc['deltam'].value[Dstar_match_acc['wrg_chg'].value])
+
+        ############# DimuDstar
+        is_ups = DimuDstar_acc['Dimu']['is_ups'].value
+        is_jpsi = DimuDstar_acc['Dimu']['is_jpsi'].value
+        is_psi = DimuDstar_acc['Dimu']['is_psi'].value
+        wrg_chg = DimuDstar_acc['Dstar']['wrg_chg'].value
+
+        # JpsiDstar
+        output['JpsiDstar']['Jpsi_mass'].fill(mass=DimuDstar_acc['Dimu']['mass'].value[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['Jpsi_p'].fill(pt=DimuDstar_acc['Dimu']['pt'].value[is_jpsi & ~wrg_chg],
+                                           eta=DimuDstar_acc['Dimu']['eta'].value[is_jpsi & ~wrg_chg],
+                                           phi=DimuDstar_acc['Dimu']['phi'].value[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['Jpsi_rap'].fill(rap=DimuDstar_acc['Dimu']['rap'].value[is_jpsi & ~wrg_chg])
+
+        output['JpsiDstar']['Dstar_deltamr'].fill(chg='right charge', deltamr=DimuDstar_acc['Dstar']['deltamr'].value[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['Dstar_deltamr'].fill(chg='wrong charge', deltamr=DimuDstar_acc['Dstar']['deltamr'].value[is_jpsi & wrg_chg])
+        output['JpsiDstar']['Dstar_deltam'].fill(chg='right charge', deltam=DimuDstar_acc['Dstar']['deltam'].value[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['Dstar_deltam'].fill(chg='wrong charge', deltam=DimuDstar_acc['Dstar']['deltam'].value[is_jpsi & wrg_chg])
+        output['JpsiDstar']['Dstar_p'].fill(chg='right charge',
+                                            pt=DimuDstar_acc['Dstar']['pt'].value[is_jpsi & ~wrg_chg],
+                                            eta=DimuDstar_acc['Dstar']['eta'].value[is_jpsi & ~wrg_chg],
+                                            phi=DimuDstar_acc['Dstar']['phi'].value[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['Dstar_p'].fill(chg='wrong charge',
+                                            pt=DimuDstar_acc['Dstar']['pt'].value[is_jpsi & wrg_chg],
+                                            eta=DimuDstar_acc['Dstar']['eta'].value[is_jpsi & wrg_chg],
+                                            phi=DimuDstar_acc['Dstar']['phi'].value[is_jpsi & wrg_chg])
+        output['JpsiDstar']['Dstar_rap'].fill(chg='right charge', rap=DimuDstar_acc['Dstar']['rap'].value[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['Dstar_rap'].fill(chg='wrong charge', rap=DimuDstar_acc['Dstar']['rap'].value[is_jpsi & wrg_chg])
+
+        output['JpsiDstar']['JpsiDstar_deltarap'].fill(deltarap=DimuDstar_acc['deltarap'].value[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['JpsiDstar_mass'].fill(mass=DimuDstar_p4.mass[is_jpsi & ~wrg_chg & dlSig])
 
         return output
 

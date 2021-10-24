@@ -11,12 +11,12 @@ def build_p4(acc):
 
     return p4
 
-class MonteCarloHistogramingProcessor(processor.ProcessorABC):
+class HistogramingProcessor(processor.ProcessorABC):
     def __init__(self, analyzer_name):
         self.analyzer_name = analyzer_name
         
         self._accumulator = processor.dict_accumulator({
-            'Primary_vertex_npvs': hist.Hist("Events", hist.Bin("npvs", "Num reconstructed vertex", 50, 0, 100)), 
+            'PV_npvs': hist.Hist("Events", hist.Bin("npvs", "Num of associated tracks", 50, 0, 100)), 
             'Muon_lead_p': hist.Hist("Events", 
                                    hist.Bin("pt", "$p_{T,\mu}$ [GeV]", 100, 0, 100),
                                    hist.Bin("eta", "$\eta_{\mu}$", 60, -2.5, 2.5),
@@ -170,7 +170,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
                                     hist.Bin("phi", "$\phi_{\mu^+\mu^-}$", 70, -3.5, 3.5)),
                 'Jpsi_rap': hist.Hist("Events", hist.Bin("rap", "y", 60, -2.5, 2.5)),
                 'JpsiDstar_deltarap': hist.Hist("Events", hist.Bin("deltarap", "$\Delta y$", 50, -5, 5)),
-                'JpsiDstar_mass': hist.Hist("Events", hist.Bin("mass", "$m_{J/\psi D*}$ [GeV]", 50, 0, 100)),
+                'JpsiDstar_mass': hist.Hist("Events", hist.Bin("mass", "$m_{J/\psi D*}$ [GeV]", 100, 0, 100)),
                 'Dstar_p': hist.Hist("Events",
                                  hist.Cat("chg", "charge"), 
                                  hist.Bin("pt", "$p_{T,D*}$ [GeV]", 100, 0, 50),
@@ -228,12 +228,23 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         Dstar_acc = acc['Dstar']
         Dstar_trk_acc = acc['Dstar_trk']
         DimuDstar_acc = acc['DimuDstar']
-        Primary_vertex_acc = acc['Primary_vertex']        
-
+        Primary_vertex_acc = acc['Primary_vertex'] 
+        HLT_2017_acc = acc['HLT_2017']
         DimuDstar_p4 = build_p4(DimuDstar_acc)
 
+        ######################## Cuts ########################   
+
+        # Cut in the significance of the decay length.
+        dlSig = (DimuDstar_acc['Dimu']['dlSig'].value < 1000000)
+        dlSig_D0Dstar = (DimuDstar_acc['Dstar']['D0dlSig'].value  < 1000000)  
+        
+        # Trigger cut
+        trigger_cut = HLT_2017_acc['HLT_Dimuon25_Jpsi'] == 1
+    
         # Primary vertex
-        output['Primary_vertex_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
+        #print(Primary_vertex_acc)
+        output['PV_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
+        
         
         #Muon
         output['Muon_lead_p'].fill(pt=Muon_lead_acc['pt'].value,
@@ -386,7 +397,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         output['UpsilonDstar']['UpsilonDstar_deltarap'].fill(deltarap=DimuDstar_acc['deltarap'].value[is_ups & ~wrg_chg])
         output['UpsilonDstar']['UpsilonDstar_mass'].fill(mass=DimuDstar_p4.mass[is_ups & ~wrg_chg])
 
-        # Jpsi
+        # JpsiDstar
         output['JpsiDstar']['Jpsi_mass'].fill(mass=DimuDstar_acc['Dimu']['mass'].value[is_jpsi & ~wrg_chg])
         output['JpsiDstar']['Jpsi_p'].fill(pt=DimuDstar_acc['Dimu']['pt'].value[is_jpsi & ~wrg_chg],
                                            eta=DimuDstar_acc['Dimu']['eta'].value[is_jpsi & ~wrg_chg],
@@ -408,8 +419,8 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         output['JpsiDstar']['Dstar_rap'].fill(chg='right charge', rap=DimuDstar_acc['Dstar']['rap'].value[is_jpsi & ~wrg_chg])
         output['JpsiDstar']['Dstar_rap'].fill(chg='wrong charge', rap=DimuDstar_acc['Dstar']['rap'].value[is_jpsi & wrg_chg])
 
-        output['JpsiDstar']['JpsiDstar_deltarap'].fill(deltarap=DimuDstar_acc['deltarap'].value[is_jpsi & ~wrg_chg])
-        output['JpsiDstar']['JpsiDstar_mass'].fill(mass=DimuDstar_p4.mass[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['JpsiDstar_deltarap'].fill(deltarap=DimuDstar_acc['deltarap'].value[is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar])
+        output['JpsiDstar']['JpsiDstar_mass'].fill(mass=DimuDstar_p4.mass[is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar])
 
         # Psi
         output['PsiDstar']['Psi_mass'].fill(mass=DimuDstar_acc['Dimu']['mass'].value[is_psi & ~wrg_chg])
