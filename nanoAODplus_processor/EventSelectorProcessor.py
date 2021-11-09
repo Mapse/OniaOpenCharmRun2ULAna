@@ -76,6 +76,8 @@ class EventSelectorProcessor(processor.ProcessorABC):
                         with_name="PtEtaPhiMCandidate")
         # Triggers for 2017 charmonium.
         hlt_char_2017 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2017)})
+        # Triggers for 2018 charmonium
+        hlt_char_2018 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2018)})
 
         output['cutflow']['Number of events'] += len(events)
         output['cutflow']['Number of Dimu'] += ak.sum(ak.num(Dimu))
@@ -89,14 +91,14 @@ class EventSelectorProcessor(processor.ProcessorABC):
         ##### Trigger cut
 
         # Activate trigger
-        hlt = False
+        hlt = True
         # HLT to be used
-        hlt_filter = 'HLT_Dimuon25_Jpsi'
+        hlt_filter = 'HLT_Dimuon20_Jpsi_Barrel_Seagulls'
         
         # Trigger choice
         if hlt:
             print(f"You are running with the trigger: {hlt_filter}")
-            trigger_cut = hlt_char_2017[hlt_filter]
+            trigger_cut = hlt_char_2018[hlt_filter]
         if not hlt:
             print("You are not running with trigger")
             # Assign 1 to all events.

@@ -41,6 +41,8 @@ hlt_cols_charm_2017 = ['HLT_Dimuon0_Jpsi_L1_4R_0er1p5R', 'HLT_Dimuon0_Jpsi_L1_No
                        'HLT_Dimuon0_Jpsi_NoVertexing_NoOS', 'HLT_Dimuon0_Jpsi_NoVertexing', 'HLT_Dimuon0_Jpsi', 'HLT_Dimuon0_LowMass_L1_4R',
                        'HLT_Dimuon0_LowMass_L1_4', 'HLT_Dimuon0_LowMass', 'HLT_Dimuon25_Jpsi']
 
+hlt_cols_charm_2018 = ['HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi', 'HLT_DoubleMu4_3_Jpsi']
+
 # This function is called to keep the cols in a good way to be read on the EventSelectProcessor.py
 def get_vars_dict(events, col_list):
     dict = {}

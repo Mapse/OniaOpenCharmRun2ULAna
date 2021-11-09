@@ -105,6 +105,8 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
                         **get_vars_dict(events, dstar_cols)}, 
                         with_name="PtEtaPhiMCandidate")
         hlt_char_2017 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2017)})
+        # Triggers for 2018 charmonium
+        hlt_char_2018 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2018)})
                      
         output['cutflow']['Number of events'] += len(events)
         output['cutflow']['Number of Dimu'] += ak.sum(ak.num(Dimu))
@@ -125,7 +127,8 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         # Trigger choice
         if hlt:
             print(f"You are running with the trigger: {hlt_filter}")
-            trigger_cut = hlt_char_2017[hlt_filter] == 1
+            trigger_cut = hlt_char_2018[hlt_filter]
+            hlt_char_2018 = hlt_char_2018[hlt_filter]
         if not hlt:
             print("You are not running with trigger")
             # Assign 1 to all events.
@@ -335,7 +338,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         
         # Dimu + Dstar
         asso = ak.cartesian([Dimu, Dstar])
-        asso = asso[ak.num(asso) > 0]
+        #asso = asso[ak.num(asso) > 0]
         
         Dimu_asso = ak.zip({
                    'pt': asso.slot0.pt,
@@ -369,6 +372,20 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         Muon_trail = ak.where(~leading_mu, Muon.slot0, Muon.slot1)
 
         ############### Create the accumulators to save output
+
+        ## Trigger accumulator
+
+        # 2017 triggers
+        trigger_2017_acc = processor.dict_accumulator({})
+        for var in hlt_char_2017.fields:
+            trigger_2017_acc[var] = processor.column_accumulator(ak.to_numpy(hlt_char_2017[var]))
+        output["HLT_2017"] = trigger_2017_acc
+
+        # 2018 triggers
+        trigger_2018_acc = processor.dict_accumulator({})
+        for var in hlt_char_2018.fields:
+            trigger_2018_acc[var] = processor.column_accumulator(ak.to_numpy(hlt_char_2018[var]))
+        output["HLT_2018"] = trigger_2018_acc
 
         # Primary vertex accumulator
         primary_vertex_acc = processor.dict_accumulator({})
