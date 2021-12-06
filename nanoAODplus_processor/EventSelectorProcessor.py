@@ -22,7 +22,7 @@ def association(cand1, cand2):
     asso = ak.cartesian([cand1, cand2])    
 
     asso = asso[asso.slot0.vtxIdx == asso.slot1.vtxIdx]
-    asso = asso[ak.num(asso) > 0]
+    #asso = asso[ak.num(asso) > 0]
     cand1 = ak.zip({
             'pt': asso.slot0.pt,
             'eta': asso.slot0.eta,
@@ -74,10 +74,17 @@ class EventSelectorProcessor(processor.ProcessorABC):
                         'charge': events.Dstar_pischg,
                         **get_vars_dict(events, dstar_cols)}, 
                         with_name="PtEtaPhiMCandidate")
-        # Triggers for 2017 charmonium.
-        hlt_char_2017 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2017)})
+        # Triggers for 2017 charmonium
+        try:
+            hlt_char_2017 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2017)})
+        except:
+            hlt_char_2017 = ak.zip({"HLT_2017" : "HLT_2017"})
+        
         # Triggers for 2018 charmonium
-        hlt_char_2018 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2018)})
+        try:
+            hlt_char_2018 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2018)})
+        except:
+            hlt_char_2018 = ak.zip({"HLT_2018" : "HLT_2018"})
 
         output['cutflow']['Number of events'] += len(events)
         output['cutflow']['Number of Dimu'] += ak.sum(ak.num(Dimu))
@@ -91,14 +98,15 @@ class EventSelectorProcessor(processor.ProcessorABC):
         ##### Trigger cut
 
         # Activate trigger
-        hlt = True
+        hlt = False
         # HLT to be used
         hlt_filter = 'HLT_Dimuon20_Jpsi_Barrel_Seagulls'
         
         # Trigger choice
         if hlt:
             print(f"You are running with the trigger: {hlt_filter}")
-            trigger_cut = hlt_char_2018[hlt_filter]
+            trigger_cut = hlt_char_2017[hlt_filter]
+            hlt_char_2017 = hlt_char_2017[trigger_cut]
         if not hlt:
             print("You are not running with trigger")
             # Assign 1 to all events.
@@ -258,6 +266,12 @@ class EventSelectorProcessor(processor.ProcessorABC):
         for var in hlt_char_2017.fields:
             trigger_2017_acc[var] = processor.column_accumulator(ak.to_numpy(hlt_char_2017[var]))
         output["HLT_2017"] = trigger_2017_acc
+
+        # 2018 triggers
+        trigger_2018_acc = processor.dict_accumulator({})
+        for var in hlt_char_2018.fields:
+            trigger_2018_acc[var] = processor.column_accumulator(ak.to_numpy(hlt_char_2018[var]))
+        output["HLT_2018"] = trigger_2018_acc
 
         # Primary vertex accumulator
         primary_vertex_acc = processor.dict_accumulator({})

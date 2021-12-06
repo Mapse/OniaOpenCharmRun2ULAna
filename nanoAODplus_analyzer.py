@@ -42,8 +42,8 @@ if (args.select or args.analyze):
 
     #files = {'Charmonium2017AOD': filesets['Charmonium2017AOD'][:]}
     #files = {'Charmonium2018AOD': filesets['Charmonium2018AOD'][:]}
-    #files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:]}
-    files = {'MonteCarlo2018AOD': filesets['MonteCarlo2018AOD'][:100]}
+    files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:]}
+    #files = {'MonteCarlo2018AOD': filesets['MonteCarlo2018AOD'][:]}
 
     # creating necessary folders into dir output data
     os.system("mkdir -p output/" + args.name)
@@ -79,11 +79,3 @@ if (args.merge or args.analyze):
 if (args.plots or args.analyze):
     from tools.plotter import plotter
     plotter(args.name, analysis_type)    
-
-
-
-
-
-
-
-   

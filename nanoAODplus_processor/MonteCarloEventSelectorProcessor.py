@@ -76,7 +76,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
             return output
 
         ############### Get the primary vertices  ############### 
-        Primary_vertex = ak.zip({**get_vars_dict(events, primary_vertex_cols)})
+        Primary_vertex = ak.zip({**get_vars_dict(events, primary_vertex_aod_cols)})
 
         ############### Get the gen particles ############### 
 
@@ -104,9 +104,17 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
                         'charge': events.Dstar_pischg,
                         **get_vars_dict(events, dstar_cols)}, 
                         with_name="PtEtaPhiMCandidate")
-        hlt_char_2017 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2017)})
+        # Triggers for 2017 charmonium
+        try:
+            hlt_char_2017 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2017)})
+        except:
+            hlt_char_2017 = ak.zip({"HLT_2017" : "HLT_2017"})
+
         # Triggers for 2018 charmonium
-        hlt_char_2018 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2018)})
+        try:
+            hlt_char_2018 = ak.zip({**get_vars_dict(events, hlt_cols_charm_2018)})
+        except:
+            hlt_char_2018 = ak.zip({"HLT_2018" : "HLT_2018"})
                      
         output['cutflow']['Number of events'] += len(events)
         output['cutflow']['Number of Dimu'] += ak.sum(ak.num(Dimu))
@@ -127,8 +135,8 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         # Trigger choice
         if hlt:
             print(f"You are running with the trigger: {hlt_filter}")
-            trigger_cut = hlt_char_2018[hlt_filter]
-            hlt_char_2018 = hlt_char_2018[hlt_filter]
+            trigger_cut = hlt_char_2017[hlt_filter]
+            hlt_char_2017 = hlt_char_2017[hlt_filter]
         if not hlt:
             print("You are not running with trigger")
             # Assign 1 to all events.
@@ -335,10 +343,9 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
             Dstar_match = Dstar_match[ak.num(Dstar_match) > 0]
             
         ## Build the associated candidates
-        
+            
         # Dimu + Dstar
-        asso = ak.cartesian([Dimu, Dstar])
-        #asso = asso[ak.num(asso) > 0]
+        asso = ak.cartesian([Dimu, Dstar]) # Don't need to apply vtxid because they are already supposed to be in the same vtx???
         
         Dimu_asso = ak.zip({
                    'pt': asso.slot0.pt,
@@ -390,9 +397,9 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         # Primary vertex accumulator
         primary_vertex_acc = processor.dict_accumulator({})
         for var in Primary_vertex.fields:
-            primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(Primary_vertex[var]))
-            #primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Primary_vertex[var])))
-        #primary_vertex_acc["nPV"] = processor.column_accumulator(ak.to_numpy(ak.num(Primary_vertex[var]))) 
+            #primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(Primary_vertex[var]))
+            primary_vertex_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Primary_vertex[var])))
+        primary_vertex_acc["nPVtx"] = processor.column_accumulator(ak.to_numpy(ak.num(Primary_vertex[var]))) 
         output["Primary_vertex"] = primary_vertex_acc
 
         # Gen Particles accumulator

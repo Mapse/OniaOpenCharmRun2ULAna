@@ -30,16 +30,14 @@ dstar_cols = ['Dstar_pt', 'Dstar_eta', 'Dstar_phi', 'Dstar_rap', 'Dstar_deltam',
 primary_vertex_cols = ['PV_chi2', 'PV_ndof', 'PV_npvs', 'PV_npvsGood', 'PV_score', 'PV_x', 'PV_y', 'PV_z']
 
 # Primary vertices (AOD, with or w/o cuts)
-primary_vertex_aod_cols = ['PVtx_Id', 'PVtx_isGood', 'PVtx_x', 'PVtx_y', 'PVtx_z', 'PVtx_ntrk', 'PVtx_x', 'PVtx_sumPt']
+primary_vertex_aod_cols = ['nPVtx' ,'PVtx_Id', 'PVtx_isGood', 'PVtx_x', 'PVtx_y', 'PVtx_z', 'PVtx_ntrk', 'PVtx_x', 'PVtx_sumPt']
 
 # Interesting gen particles
 gen_part_cols = ['GenPart_eta', 'GenPart_genPartIdxMother', 'GenPart_mass', 'GenPart_pdgId', "GenPart_phi", "GenPart_pt", 'GenPart_status',
                  'GenPart_Id', 'GenPart_parpdgId', 'GenPart_sparpdgId', 'GenPart_numberOfDaughters', 'GenPart_nstchgdaug', 'GenPart_vx', 
                  'GenPart_vy', 'GenPart_vz', 'GenPart_mvx', 'GenPart_mvy', 'GenPart_mvz', 'GenPart_recIdx']
 
-hlt_cols_charm_2017 = ['HLT_Dimuon0_Jpsi_L1_4R_0er1p5R', 'HLT_Dimuon0_Jpsi_L1_NoOS', 'HLT_Dimuon0_Jpsi_NoVertexing_L1_4R_0er1p5R',
-                       'HLT_Dimuon0_Jpsi_NoVertexing_NoOS', 'HLT_Dimuon0_Jpsi_NoVertexing', 'HLT_Dimuon0_Jpsi', 'HLT_Dimuon0_LowMass_L1_4R',
-                       'HLT_Dimuon0_LowMass_L1_4', 'HLT_Dimuon0_LowMass', 'HLT_Dimuon25_Jpsi']
+hlt_cols_charm_2017 = ['HLT_Dimuon0_Jpsi', 'HLT_Dimuon20_Jpsi_Barrel_Seagulls' , 'HLT_Dimuon25_Jpsi']
 
 hlt_cols_charm_2018 = ['HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi', 'HLT_DoubleMu4_3_Jpsi']
 
@@ -59,8 +57,8 @@ def get_vars_dict(events, col_list):
         elif c.startswith('Dstar'):
             col = c[5:]
             if col.startswith('_'): col = col[1:]
-        elif c.startswith('PV'):
-            col = c[2:]
+        elif c.startswith('PVtx'):
+            col = c[5:]
             if col.startswith('_'): col = col[1:]
         elif c.startswith('GenPart'):
             col = c[8:]

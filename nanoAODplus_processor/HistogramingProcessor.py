@@ -3,6 +3,8 @@ from coffea import processor, hist
 import awkward as ak
 from coffea.util import load
 
+import numpy as np
+
 def build_p4(acc):
     p4 = ak.zip({'x': acc['x'].value, 
                  'y': acc['y'].value,
@@ -230,29 +232,301 @@ class HistogramingProcessor(processor.ProcessorABC):
         DimuDstar_acc = acc['DimuDstar']
         Primary_vertex_acc = acc['Primary_vertex'] 
         HLT_2017_acc = acc['HLT_2017']
+        HLT_2018_acc = acc['HLT_2018']
         DimuDstar_p4 = build_p4(DimuDstar_acc)
 
-        ######################## Cuts ########################   
+        ######################## Cuts ######################## 
+
+        is_ups = DimuDstar_acc['Dimu']['is_ups'].value
+        is_jpsi = DimuDstar_acc['Dimu']['is_jpsi'].value
+        is_psi = DimuDstar_acc['Dimu']['is_psi'].value
+        wrg_chg = DimuDstar_acc['Dstar']['wrg_chg'].value  
 
         # Cut in the significance of the decay length.
         dlSig = (DimuDstar_acc['Dimu']['dlSig'].value < 1000000)
         dlSig_D0Dstar = (DimuDstar_acc['Dstar']['D0dlSig'].value  < 1000000)  
         
+        ##### Creates coffea lorentz vector to apply trigger on the data #####
+
+        ## Muon lead collection
+
+        # Creates the pt, eta, phi, m lorentz vector.
+        Muon_lead = ak.zip({
+            'pt' : Muon_lead_acc['pt'].value,
+            'eta' : Muon_lead_acc['eta'].value,
+            'phi' : Muon_lead_acc['phi'].value,}, with_name='PtEtaPhiMCandidate')
+        # Uses unflatten with the number of Dimuon in order to apply trigger correction
+        Muon_lead = ak.unflatten(Muon_lead, Muon_lead_acc['nMuon'].value)
+
+        ## Muon trail collection
+
+        # Creates the pt, eta, phi, m lorentz vector.
+        Muon_trail = ak.zip({
+            'pt' : Muon_trail_acc['pt'].value,
+            'eta' : Muon_trail_acc['eta'].value,
+            'phi' : Muon_trail_acc['phi'].value,}, with_name='PtEtaPhiMCandidate')
+        # Uses unflatten with the number of Dimuon in order to apply trigger correction
+        Muon_trail = ak.unflatten(Muon_trail, Muon_trail_acc['nMuon'].value)
+
+        ## Dimuon collection
+
+        # Creates the pt, eta, phi, m lorentz vector.
+        Dimu = ak.zip({
+            'pt': Dimu_acc['pt'].value,
+            'eta': Dimu_acc['eta'].value,
+            'phi': Dimu_acc['phi'].value,
+            'mass': Dimu_acc['mass'].value,
+            'rap': Dimu_acc['rap'].value,
+            'dl': Dimu_acc['dl'].value,
+            'dlSig': Dimu_acc['dlSig'].value,
+            'chi2': Dimu_acc['chi2'].value,
+            'cosphi': Dimu_acc['cosphi'].value,
+            'is_jpsi' : Dimu_acc['is_jpsi'].value,}, with_name="PtEtaPhiMLorentzVector")
+
+        # Uses unflatten with the number of Dimuon in order to apply trigger correction
+        Dimu = ak.unflatten(Dimu, Dimu_acc['nDimu'].value)
+
+        ## Dstar collection
+
+        # Creates the pt, eta, phi, m lorentz vector.
+        Dstar = ak.zip({
+            'pt' : Dstar_acc['pt'].value,
+            'eta' : Dstar_acc['eta'].value,
+            'phi' : Dstar_acc['phi'].value,
+            'mass' : Dstar_acc['mass'].value,
+            'rap': Dstar_acc['rap'].value,
+            'charge' : Dstar_acc['charge'].value,
+            'deltam' : Dstar_acc['deltam'].value,
+            'deltamr' : Dstar_acc['deltamr'].value,
+            'wrg_chg' : Dstar_acc['wrg_chg'].value}, with_name='PtEtaPhiMCandidate') 
+
+        # Uses unflatten with the number of Dimuon in order to apply trigger correction
+        Dstar = ak.unflatten(Dstar, Dstar_acc['nDstar'].value)
+
+        ## DimuDstar collection
+
+        # Creates the pt, eta, phi, m lorentz vector.
+        DimuDstar = ak.zip({
+            'jpsi_mass' : DimuDstar_acc['Dimu']['mass'].value,
+            'jpsi_pt' : DimuDstar_acc['Dimu']['pt'].value,
+            'jpsi_eta' : DimuDstar_acc['Dimu']['eta'].value,
+            'jpsi_phi' : DimuDstar_acc['Dimu']['phi'].value,
+            'jpsi_rap' : DimuDstar_acc['Dimu']['rap'].value,
+            'dstar_deltam' : DimuDstar_acc['Dstar']['deltam'].value,
+            'dstar_deltamr' : DimuDstar_acc['Dstar']['deltamr'].value,
+            'dstar_pt' : DimuDstar_acc['Dstar']['pt'].value,
+            'dstar_eta' : DimuDstar_acc['Dstar']['eta'].value,
+            'dstar_phi' : DimuDstar_acc['Dstar']['phi'].value,
+            'dstar_rap' : DimuDstar_acc['Dstar']['rap'].value,
+            'dimu_dstar_deltarap' : DimuDstar_acc['deltarap'].value,
+            'dimu_dstar_mass' : DimuDstar_p4.mass, #is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar
+            'is_jpsi' : DimuDstar_acc['Dimu']['is_jpsi'].value,
+            'wrg_chg': DimuDstar_acc['Dstar']['wrg_chg'].value,}, with_name='PtEtaPhiMCandidate')  
+        
+
+        DimuDstar = ak.unflatten(DimuDstar, DimuDstar_acc['nDimuDstar'].value)
+
+        #print(len(Dstar_acc['nDstar'].value))
+        #print(len(Dimu_acc['nDimu'].value))
+        #print(len(Muon_lead_acc['nMuon'].value))
+        #print(len(HLT_2017_acc['HLT_Dimuon0_Jpsi'].value))
+        #print(len(DimuDstar_acc['nDimuDstar'].value))
+
         # Trigger cut
-        trigger_cut = HLT_2017_acc['HLT_Dimuon25_Jpsi'] == 1
+        hlt = True
+        hlt_filter = ['HLT_Dimuon0_Jpsi', 'HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi']
+        HLT_acc = HLT_2017_acc
+
+        if hlt:
+            print(f"You are running with the trigger(s): {hlt_filter}")
+            
+            trigger_cut = HLT_acc[hlt_filter[0]].value
+            for i in range(0, len(hlt_filter)):
+                trigger_cut |= HLT_acc[hlt_filter[i]].value
+
+            # Muon lead collection
+            Muon_lead = Muon_lead[trigger_cut]
+              
+            muon_lead_pt = ak.flatten(Muon_lead.pt)
+            muon_lead_eta = ak.flatten(Muon_lead.eta)
+            muon_lead_phi = ak.flatten(Muon_lead.phi)
+            
+            # Muon trail collection
+            Muon_trail = Muon_trail[trigger_cut]
+
+            muon_trail_pt = ak.flatten(Muon_trail.pt)
+            muon_trail_eta = ak.flatten(Muon_trail.eta)
+            muon_trail_phi = ak.flatten(Muon_trail.phi)
+
+            # Jpsi collection
+            Dimu = Dimu[trigger_cut]
+            Dimu = Dimu[Dimu.is_jpsi]
+
+            jpsi_mass = ak.flatten(Dimu.mass)
+            jpsi_pt = ak.flatten(Dimu.pt)
+            jpsi_eta = ak.flatten(Dimu.eta)
+            jpsi_phi = ak.flatten(Dimu.phi)
+            jpsi_rap = ak.flatten(Dimu.rap)
+
+            jpsi_dl = ak.flatten(Dimu.dl)
+            jpsi_dlSig = ak.flatten(Dimu.dlSig)
+            jpsi_chi2 = ak.flatten(Dimu.chi2)
+            jpsi_cosphi =ak.flatten(Dimu.cosphi)
+           
+            # Dstar collection
+            Dstar = Dstar[trigger_cut]
+
+            dstar_right_charge = Dstar[~Dstar.wrg_chg]
+            dstar_wrong_charge = Dstar[Dstar.wrg_chg]
+
+            dstar_right_charge_pt = ak.flatten(dstar_right_charge.pt)
+            dstar_right_charge_eta = ak.flatten(dstar_right_charge.eta)
+            dstar_right_charge_phi = ak.flatten(dstar_right_charge.phi)
+
+            dstar_wrong_charge_pt = ak.flatten(dstar_wrong_charge.pt)
+            dstar_wrong_charge_eta = ak.flatten(dstar_wrong_charge.eta)
+            dstar_wrong_charge_phi = ak.flatten(dstar_wrong_charge.phi)
+            
+            dstar_right_charge_rap = ak.flatten(dstar_right_charge.rap)
+            dstar_wrong_charge_rap = ak.flatten(dstar_wrong_charge.rap)
+
+            dstar_right_charge_deltam = ak.flatten(dstar_right_charge.deltam)
+            dstar_wrong_charge_deltam = ak.flatten(dstar_wrong_charge.deltam)
+
+            dstar_right_charge_deltamr = ak.flatten(dstar_right_charge.deltamr)
+            dstar_wrong_charge_deltamr = ak.flatten(dstar_wrong_charge.deltamr)
+
+            ## DimuDstar collection
+            DimuDstar = DimuDstar[trigger_cut]
+            DimuDstar = DimuDstar[DimuDstar.is_jpsi]
+            DimuDstar = DimuDstar[~DimuDstar.wrg_chg]
+
+            # Associated jpsi
+            jpsi_asso_mass = ak.flatten(DimuDstar.jpsi_mass)
+            jpsi_asso_pt = ak.flatten(DimuDstar.jpsi_pt)
+            jpsi_asso_eta = ak.flatten(DimuDstar.jpsi_eta)
+            jpsi_asso_phi = ak.flatten(DimuDstar.jpsi_phi)
+            jpsi_asso_rap = ak.flatten(DimuDstar.jpsi_rap)
+
+            # Associated dstar
+            dimu_dstar_right_charge = DimuDstar
+            dimu_dstar_wrong_charge = DimuDstar[DimuDstar.wrg_chg]
+
+            dstar_asso_right_charge_deltamr = ak.flatten(dimu_dstar_right_charge.dstar_deltamr)
+            dstar_asso_wrong_charge_deltamr = ak.flatten(dimu_dstar_wrong_charge.dstar_deltamr)
+            
+            dstar_asso_right_charge_deltam = ak.flatten(dimu_dstar_right_charge.dstar_deltam)
+            dstar_asso_wrong_charge_deltam = ak.flatten(dimu_dstar_wrong_charge.dstar_deltam)
+
+            dstar_asso_right_charge_pt = ak.flatten(dimu_dstar_right_charge.dstar_pt)
+            dstar_asso_right_charge_eta = ak.flatten(dimu_dstar_right_charge.dstar_eta)
+            dstar_asso_right_charge_phi = ak.flatten(dimu_dstar_right_charge.dstar_phi)
+
+            dstar_asso_wrong_charge_pt = ak.flatten(dimu_dstar_wrong_charge.dstar_pt)
+            dstar_asso_wrong_charge_eta = ak.flatten(dimu_dstar_wrong_charge.dstar_eta)
+            dstar_asso_wrong_charge_phi = ak.flatten(dimu_dstar_wrong_charge.dstar_phi)
+
+            dstar_asso_right_charge_rap = ak.flatten(dimu_dstar_right_charge.dstar_rap)
+            dstar_asso_wrong_charge_rap = ak.flatten(dimu_dstar_wrong_charge.dstar_rap)
+
+            # Associated object
+            dimuon_dstar_deltarap = ak.flatten(DimuDstar.dimu_dstar_deltarap)
+            dimuon_dstar_mass = ak.flatten(DimuDstar.dimu_dstar_mass)
+            
+        if not hlt:
+            print("You are not running with trigger")
+            trigger_cut = np.ones(len(Dimu), dtype=bool)
+            
+            # Muon lead collection
+            muon_lead_pt = Muon_lead_acc['pt'].value
+            muon_lead_eta = Muon_lead_acc['eta'].value
+            muon_lead_phi = Muon_lead_acc['phi'].value
+            
+            # Muon trail collection
+            muon_trail_pt = Muon_trail_acc['pt'].value
+            muon_trail_eta = Muon_trail_acc['eta'].value
+            muon_trail_phi = Muon_trail_acc['phi'].value
+           
+            # Jpsi collection
+            jpsi_mass = Dimu_acc['mass'].value[Dimu_acc['is_jpsi'].value]
+            jpsi_pt = Dimu_acc['pt'].value[Dimu_acc['is_jpsi'].value]
+            jpsi_eta = Dimu_acc['eta'].value[Dimu_acc['is_jpsi'].value]
+            jpsi_phi = Dimu_acc['phi'].value[Dimu_acc['is_jpsi'].value]
+            jpsi_rap = Dimu_acc['rap'].value[Dimu_acc['is_jpsi'].value]
+            jpsi_dl = Dimu_acc['dl'].value[Dimu_acc['is_jpsi'].value]
+            jpsi_dlSig = Dimu_acc['dlSig'].value[Dimu_acc['is_jpsi'].value]
+            jpsi_chi2 = Dimu_acc['chi2'].value[Dimu_acc['is_jpsi'].value]
+            jpsi_cosphi = Dimu_acc['cosphi'].value[Dimu_acc['is_jpsi'].value]
+           
+            # Dstar collection
+            dstar_right_charge_pt = Dstar_acc['pt'].value[~Dstar_acc['wrg_chg'].value]
+            dstar_right_charge_eta = Dstar_acc['eta'].value[~Dstar_acc['wrg_chg'].value]
+            dstar_right_charge_phi = Dstar_acc['phi'].value[~Dstar_acc['wrg_chg'].value]
+            
+            dstar_wrong_charge_pt = Dstar_acc['pt'].value[Dstar_acc['wrg_chg'].value]
+            dstar_wrong_charge_eta = Dstar_acc['eta'].value[Dstar_acc['wrg_chg'].value]
+            dstar_wrong_charge_phi = Dstar_acc['phi'].value[Dstar_acc['wrg_chg'].value]
+            
+            dstar_right_charge_rap = Dstar_acc['rap'].value[~Dstar_acc['wrg_chg'].value]
+            dstar_wrong_charge_rap = Dstar_acc['rap'].value[Dstar_acc['wrg_chg'].value]
+
+            dstar_right_charge_deltam = Dstar_acc['deltamr'].value[~Dstar_acc['wrg_chg'].value]
+            dstar_wrong_charge_deltam = Dstar_acc['deltamr'].value[Dstar_acc['wrg_chg'].value]
+
+            dstar_right_charge_deltamr = Dstar_acc['deltam'].value[~Dstar_acc['wrg_chg'].value]
+            dstar_wrong_charge_deltamr = Dstar_acc['deltam'].value[Dstar_acc['wrg_chg'].value]
+
+            ## DimuonDstar
+
+            # Filters for jpsi and dstar
+            is_jpsi = DimuDstar_acc['Dimu']['is_jpsi'].value
+            wrg_chg = DimuDstar_acc['Dstar']['wrg_chg'].value
+
+            # Associated jpsi
+            jpsi_asso_mass = DimuDstar_acc['Dimu']['mass'].value[is_jpsi & ~wrg_chg]
+            jpsi_asso_pt = DimuDstar_acc['Dimu']['pt'].value[is_jpsi & ~wrg_chg]
+            jpsi_asso_eta = DimuDstar_acc['Dimu']['eta'].value[is_jpsi & ~wrg_chg]
+            jpsi_asso_phi = DimuDstar_acc['Dimu']['phi'].value[is_jpsi & ~wrg_chg]
+            jpsi_asso_rap = DimuDstar_acc['Dimu']['rap'].value[is_jpsi & ~wrg_chg]
+
+            # Associated dstar
+            dstar_asso_right_charge_deltamr = DimuDstar_acc['Dstar']['deltamr'].value[is_jpsi & ~wrg_chg]
+            dstar_asso_wrong_charge_deltamr = DimuDstar_acc['Dstar']['deltamr'].value[is_jpsi & wrg_chg]
+            
+            dstar_asso_right_charge_deltam = DimuDstar_acc['Dstar']['deltam'].value[is_jpsi & ~wrg_chg]
+            dstar_asso_wrong_charge_deltam = DimuDstar_acc['Dstar']['deltam'].value[is_jpsi & wrg_chg]
+
+            dstar_asso_right_charge_pt = DimuDstar_acc['Dstar']['pt'].value[is_jpsi & ~wrg_chg]
+            dstar_asso_right_charge_eta = DimuDstar_acc['Dstar']['eta'].value[is_jpsi & ~wrg_chg]
+            dstar_asso_right_charge_phi = DimuDstar_acc['Dstar']['phi'].value[is_jpsi & ~wrg_chg]
+
+            dstar_asso_wrong_charge_pt = DimuDstar_acc['Dstar']['pt'].value[is_jpsi & wrg_chg]
+            dstar_asso_wrong_charge_eta = DimuDstar_acc['Dstar']['eta'].value[is_jpsi & wrg_chg]
+            dstar_asso_wrong_charge_phi = DimuDstar_acc['Dstar']['phi'].value[is_jpsi & wrg_chg]
+
+            dstar_asso_right_charge_rap = DimuDstar_acc['Dstar']['rap'].value[is_jpsi & ~wrg_chg]
+            dstar_asso_wrong_charge_rap = DimuDstar_acc['Dstar']['rap'].value[is_jpsi & wrg_chg]
+
+            # Associated object
+            dimuon_dstar_deltarap = DimuDstar_acc['deltarap'].value[is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar]
+            dimuon_dstar_mass = DimuDstar_p4.mass[is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar]
+
+
+
+
     
         # Primary vertex
         #print(Primary_vertex_acc)
         output['PV_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
         
         
-        #Muon
-        output['Muon_lead_p'].fill(pt=Muon_lead_acc['pt'].value,
-                                   eta=Muon_lead_acc['eta'].value,
-                                   phi=Muon_lead_acc['phi'].value)
-        output['Muon_trail_p'].fill(pt=Muon_trail_acc['pt'].value,
-                                    eta=Muon_trail_acc['eta'].value,
-                                    phi=Muon_trail_acc['phi'].value)
+        ##Muon
+        output['Muon_lead_p'].fill(pt=muon_lead_pt,
+                                   eta=muon_lead_eta,
+                                   phi=muon_lead_phi,)
+        output['Muon_trail_p'].fill(pt=muon_trail_pt,
+                                   eta=muon_trail_eta,
+                                   phi=muon_trail_phi,)
         # Upsilon
         output['Upsilon_mass'].fill(mass=Dimu_acc['mass'].value[Dimu_acc['is_ups'].value])
         output['Upsilon_p'].fill(pt=Dimu_acc['pt'].value[Dimu_acc['is_ups'].value],
@@ -265,15 +539,15 @@ class HistogramingProcessor(processor.ProcessorABC):
         output['Upsilon_cosphi'].fill(cosphi=Dimu_acc['cosphi'].value[Dimu_acc['is_ups'].value])
 
         # Jpsi
-        output['Jpsi_mass'].fill(mass=Dimu_acc['mass'].value[Dimu_acc['is_jpsi'].value])
-        output['Jpsi_p'].fill(pt=Dimu_acc['pt'].value[Dimu_acc['is_jpsi'].value],
-                                 eta=Dimu_acc['eta'].value[Dimu_acc['is_jpsi'].value],
-                                 phi=Dimu_acc['phi'].value[Dimu_acc['is_jpsi'].value])
-        output['Jpsi_rap'].fill(rap=Dimu_acc['rap'].value[Dimu_acc['is_jpsi'].value])
-        output['Jpsi_dl'].fill(dl=Dimu_acc['dl'].value[Dimu_acc['is_jpsi'].value])
-        output['Jpsi_dlSig'].fill(dlSig=Dimu_acc['dlSig'].value[Dimu_acc['is_jpsi'].value])
-        output['Jpsi_chi2'].fill(chi2=Dimu_acc['chi2'].value[Dimu_acc['is_jpsi'].value])
-        output['Jpsi_cosphi'].fill(cosphi=Dimu_acc['cosphi'].value[Dimu_acc['is_jpsi'].value])
+        output['Jpsi_mass'].fill(mass=jpsi_mass)
+        output['Jpsi_p'].fill(pt=jpsi_pt,
+                                 eta=jpsi_eta,
+                                 phi=jpsi_phi)
+        output['Jpsi_rap'].fill(rap=jpsi_rap)
+        output['Jpsi_dl'].fill(dl=jpsi_dl)
+        output['Jpsi_dlSig'].fill(dlSig=jpsi_dlSig)
+        output['Jpsi_chi2'].fill(chi2=jpsi_chi2)
+        output['Jpsi_cosphi'].fill(cosphi=jpsi_cosphi)
 
         # Psi
         output['Psi_mass'].fill(mass=Dimu_acc['mass'].value[Dimu_acc['is_psi'].value])
@@ -320,19 +594,19 @@ class HistogramingProcessor(processor.ProcessorABC):
         
         # Dstar
         output['Dstar_p'].fill(chg='right charge', 
-                               pt=Dstar_acc['pt'].value[~Dstar_acc['wrg_chg'].value],
-                               eta=Dstar_acc['eta'].value[~Dstar_acc['wrg_chg'].value],
-                               phi=Dstar_acc['phi'].value[~Dstar_acc['wrg_chg'].value])
+                               pt=dstar_right_charge_pt,
+                               eta=dstar_right_charge_eta,
+                               phi=dstar_right_charge_phi)
         output['Dstar_p'].fill(chg='wrong charge', 
-                               pt=Dstar_acc['pt'].value[Dstar_acc['wrg_chg'].value],
-                               eta=Dstar_acc['eta'].value[Dstar_acc['wrg_chg'].value],
-                               phi=Dstar_acc['phi'].value[Dstar_acc['wrg_chg'].value])
-        output['Dstar_rap'].fill(chg='right charge', rap=Dstar_acc['rap'].value[~Dstar_acc['wrg_chg'].value])
-        output['Dstar_rap'].fill(chg='wrong charge', rap=Dstar_acc['rap'].value[Dstar_acc['wrg_chg'].value])
-        output['Dstar_deltamr'].fill(chg='right charge', deltamr=Dstar_acc['deltamr'].value[~Dstar_acc['wrg_chg'].value])
-        output['Dstar_deltamr'].fill(chg='wrong charge', deltamr=Dstar_acc['deltamr'].value[Dstar_acc['wrg_chg'].value])
-        output['Dstar_deltam'].fill(chg='right charge', deltam=Dstar_acc['deltam'].value[~Dstar_acc['wrg_chg'].value])
-        output['Dstar_deltam'].fill(chg='wrong charge', deltam=Dstar_acc['deltam'].value[Dstar_acc['wrg_chg'].value])
+                               pt=dstar_wrong_charge_pt,
+                               eta=dstar_wrong_charge_eta,
+                               phi=dstar_wrong_charge_phi)
+        output['Dstar_rap'].fill(chg='right charge', rap=dstar_right_charge_rap)
+        output['Dstar_rap'].fill(chg='wrong charge', rap=dstar_wrong_charge_rap)
+        output['Dstar_deltamr'].fill(chg='right charge', deltamr=dstar_right_charge_deltam)
+        output['Dstar_deltamr'].fill(chg='wrong charge', deltamr=dstar_wrong_charge_deltam)
+        output['Dstar_deltam'].fill(chg='right charge', deltam=dstar_right_charge_deltamr)
+        output['Dstar_deltam'].fill(chg='wrong charge', deltam=dstar_wrong_charge_deltamr)
         
         # Dstar trks
         output['Dstar_K_p'].fill(pt=Dstar_trk_acc['Kpt'].value[~Dstar_acc['wrg_chg'].value],
@@ -367,11 +641,7 @@ class HistogramingProcessor(processor.ProcessorABC):
         output['Dstar_pis_dz'].fill(dz=Dstar_trk_acc['pisdz'].value[~Dstar_acc['wrg_chg'].value])
 
         ############# DimuDstar
-        is_ups = DimuDstar_acc['Dimu']['is_ups'].value
-        is_jpsi = DimuDstar_acc['Dimu']['is_jpsi'].value
-        is_psi = DimuDstar_acc['Dimu']['is_psi'].value
-        wrg_chg = DimuDstar_acc['Dstar']['wrg_chg'].value
-
+        
         # Upsilon
         output['UpsilonDstar']['Upsilon_mass'].fill(mass=DimuDstar_acc['Dimu']['mass'].value[is_ups & ~wrg_chg])
         output['UpsilonDstar']['Upsilon_p'].fill(pt=DimuDstar_acc['Dimu']['pt'].value[is_ups & ~wrg_chg],
@@ -397,30 +667,31 @@ class HistogramingProcessor(processor.ProcessorABC):
         output['UpsilonDstar']['UpsilonDstar_deltarap'].fill(deltarap=DimuDstar_acc['deltarap'].value[is_ups & ~wrg_chg])
         output['UpsilonDstar']['UpsilonDstar_mass'].fill(mass=DimuDstar_p4.mass[is_ups & ~wrg_chg])
 
+
         # JpsiDstar
-        output['JpsiDstar']['Jpsi_mass'].fill(mass=DimuDstar_acc['Dimu']['mass'].value[is_jpsi & ~wrg_chg])
-        output['JpsiDstar']['Jpsi_p'].fill(pt=DimuDstar_acc['Dimu']['pt'].value[is_jpsi & ~wrg_chg],
-                                           eta=DimuDstar_acc['Dimu']['eta'].value[is_jpsi & ~wrg_chg],
-                                           phi=DimuDstar_acc['Dimu']['phi'].value[is_jpsi & ~wrg_chg])
-        output['JpsiDstar']['Jpsi_rap'].fill(rap=DimuDstar_acc['Dimu']['rap'].value[is_jpsi & ~wrg_chg])
+        output['JpsiDstar']['Jpsi_mass'].fill(mass=jpsi_asso_mass)
+        output['JpsiDstar']['Jpsi_p'].fill(pt=jpsi_asso_pt,
+                                           eta=jpsi_asso_eta,
+                                           phi=jpsi_asso_phi)
+        output['JpsiDstar']['Jpsi_rap'].fill(rap=jpsi_asso_rap)
 
-        output['JpsiDstar']['Dstar_deltamr'].fill(chg='right charge', deltamr=DimuDstar_acc['Dstar']['deltamr'].value[is_jpsi & ~wrg_chg])
-        output['JpsiDstar']['Dstar_deltamr'].fill(chg='wrong charge', deltamr=DimuDstar_acc['Dstar']['deltamr'].value[is_jpsi & wrg_chg])
-        output['JpsiDstar']['Dstar_deltam'].fill(chg='right charge', deltam=DimuDstar_acc['Dstar']['deltam'].value[is_jpsi & ~wrg_chg])
-        output['JpsiDstar']['Dstar_deltam'].fill(chg='wrong charge', deltam=DimuDstar_acc['Dstar']['deltam'].value[is_jpsi & wrg_chg])
+        output['JpsiDstar']['Dstar_deltamr'].fill(chg='right charge', deltamr=dstar_asso_right_charge_deltamr)
+        output['JpsiDstar']['Dstar_deltamr'].fill(chg='wrong charge', deltamr=dstar_asso_wrong_charge_deltamr)
+        output['JpsiDstar']['Dstar_deltam'].fill(chg='right charge', deltam=dstar_asso_right_charge_deltam)
+        output['JpsiDstar']['Dstar_deltam'].fill(chg='wrong charge', deltam=dstar_asso_wrong_charge_deltam)
         output['JpsiDstar']['Dstar_p'].fill(chg='right charge',
-                                            pt=DimuDstar_acc['Dstar']['pt'].value[is_jpsi & ~wrg_chg],
-                                            eta=DimuDstar_acc['Dstar']['eta'].value[is_jpsi & ~wrg_chg],
-                                            phi=DimuDstar_acc['Dstar']['phi'].value[is_jpsi & ~wrg_chg])
+                                            pt=dstar_asso_right_charge_pt,
+                                            eta=dstar_asso_right_charge_eta,
+                                            phi=dstar_asso_right_charge_phi)
         output['JpsiDstar']['Dstar_p'].fill(chg='wrong charge',
-                                            pt=DimuDstar_acc['Dstar']['pt'].value[is_jpsi & wrg_chg],
-                                            eta=DimuDstar_acc['Dstar']['eta'].value[is_jpsi & wrg_chg],
-                                            phi=DimuDstar_acc['Dstar']['phi'].value[is_jpsi & wrg_chg])
-        output['JpsiDstar']['Dstar_rap'].fill(chg='right charge', rap=DimuDstar_acc['Dstar']['rap'].value[is_jpsi & ~wrg_chg])
-        output['JpsiDstar']['Dstar_rap'].fill(chg='wrong charge', rap=DimuDstar_acc['Dstar']['rap'].value[is_jpsi & wrg_chg])
+                                            pt=dstar_asso_wrong_charge_pt,
+                                            eta=dstar_asso_wrong_charge_eta,
+                                            phi=dstar_asso_wrong_charge_phi)
+        output['JpsiDstar']['Dstar_rap'].fill(chg='right charge', rap=dstar_asso_right_charge_rap)
+        output['JpsiDstar']['Dstar_rap'].fill(chg='wrong charge', rap=dstar_asso_wrong_charge_rap)
 
-        output['JpsiDstar']['JpsiDstar_deltarap'].fill(deltarap=DimuDstar_acc['deltarap'].value[is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar])
-        output['JpsiDstar']['JpsiDstar_mass'].fill(mass=DimuDstar_p4.mass[is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar])
+        output['JpsiDstar']['JpsiDstar_deltarap'].fill(deltarap=dimuon_dstar_deltarap)
+        output['JpsiDstar']['JpsiDstar_mass'].fill(mass=dimuon_dstar_mass)
 
         # Psi
         output['PsiDstar']['Psi_mass'].fill(mass=DimuDstar_acc['Dimu']['mass'].value[is_psi & ~wrg_chg])
