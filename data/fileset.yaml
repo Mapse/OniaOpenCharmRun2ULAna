@@ -52,11 +52,24 @@ MC:
     year: "2017"
     path:
     - data/path/MonteCarlo/2017/JpsiDstar_2017.txt
+    
   - primary_dataset: "MonteCarlo"
     datatier: "AOD"
     year: "2018"
     path:
     - data/path/MonteCarlo/2018/JpsiDstar_2018.txt ########### Update the file!!
+
+  - primary_dataset: "JpsiGun"
+    datatier: "AOD"
+    year: "2017"
+    path:
+    - data/path/MonteCarlo/2017/JpsiGun_2017.txt 
+
+  - primary_dataset: "DstarGun"
+    datatier: "AOD"
+    year: "2017"
+    path:
+    - data/path/MonteCarlo/2017/DstarGun_2017.txt 
      
 
  

@@ -15,44 +15,70 @@ D0_PDG_MASS = 1.864
 
 loose = 0
 
-def dimu_match(muon, dimu, genpart):
-    ''' Function for the matching between the reco and gen muons. The cuts that operates on all of them and 
-    computation of quantities can go here. individual cuts can go on the main processing. The first candidate
-    is the Muon collection, the second is the Dimuon collection and the third is the Gen Muon collection'''
-    
-    # Do the match for the first slot in muon collection
-    match1 = ak.cartesian([muon.slot0, genpart[(genpart.pdgId == -13) | (genpart.pdgId == 13)]])
-    match1 = match1[match1.slot0.simIdx == match1.slot1.Id]
-
-    match2 = ak.cartesian([muon.slot1, genpart[(genpart.pdgId == -13) | (genpart.pdgId == 13)]])
-    match2 = match2[match2.slot0.simIdx == match2.slot1.Id]
-
-    # Matching for dimuon collection considering J/Psi or Psi(2S)
-    dimuon_match = ak.cartesian([dimu, genpart[(genpart.pdgId == 443) | (genpart.pdgId == 100443)]])
-    dimuon_match = dimuon_match[match1.slot0.simIdx == match1.slot1.Id]
-
-    matching = ((ak.num(match1.slot1) > 0) & (ak.num(match2.slot1) > 0))
-
-    muon1_gen = match1[matching]
-    muon2_gen = match2[matching]
-    dimu_gen = dimuon_match[matching]
-    
-
-    dimu_ids = get_gendimu_id(dimu_gen.slot1.Id, muon1_gen.slot1.genPartIdxMother, ak.ArrayBuilder()).snapshot()
-    dimu_gen = dimu_gen[dimu_ids]
-        
-    return muon1_gen, muon2_gen, dimu_gen
-
 @numba.njit
-def get_gendimu_id(dimu_id, muon1_mid, builder):
-    for i0 in range(len(muon1_mid)):
-        for i1 in range(len(muon1_mid[i0])):
-            for i2 in range(len(dimu_id[i0])):
-                if muon1_mid[i0][i1] == dimu_id[i0][i2]:
-                    builder.begin_list()
-                    builder.integer(i2)
-                    builder.end_list()
+def get_gendimu_id(muon, genpart, builder):
+    for i0 in range(len(muon['0'])):
+        builder.begin_list()
+        for i1 in range(len(muon['0'][i0])):
+            index0 = index1 = -1
+            for i2 in range(len(genpart[i0])):
+                if genpart[i0][i2].Id == muon['0'][i0][i1].simIdx: index0 = i2
+                if genpart[i0][i2].Id == muon['1'][i0][i1].simIdx: index1 = i2
+            if ((index0 > -1) and (index1 > -1) and (genpart[i0][index0].genPartIdxMother == genpart[i0][index1].genPartIdxMother)):
+                index_gen = -1
+                for i3 in range(len(genpart[i0])):
+                    if genpart[i0][index0].genPartIdxMother != genpart[i0][i3].Id: continue
+                    index_gen = i3
+                builder.begin_record()
+                builder.field('muon0').integer(index0)
+                builder.field('muon1').integer(index1)
+                builder.field('dimu').integer(index_gen)
+                builder.end_record()
+            else:
+                builder.begin_record()
+                builder.field('muon0').integer(-1)
+                builder.field('muon1').integer(-1)
+                builder.field('dimu').integer(-1)
+                builder.end_record()
+        builder.end_list()
+            
     return builder
+
+def dimu_match(muon, dimu, genpart):
+    
+    # Filter genparticles for muon with jpsi as mother or jpsi
+    genpart = genpart[((np.absolute(genpart.pdgId) == 13) & (genpart.parpdgId == 443)) | (genpart.pdgId == 443)]
+    
+    ## Gen muon cuts
+    
+    # pT cut
+    gen_muon_pt_cut = (np.absolute(genpart.pdgId) == 13) & (genpart.parpdgId == 443) & (genpart.pt < 3)        
+    genpart = genpart[~gen_muon_pt_cut]
+    # eta cut
+    gen_muon_eta_cut = (np.absolute(genpart.pdgId) == 13) & (genpart.parpdgId == 443) & (np.absolute(genpart.eta >= 2.4))        
+    genpart = genpart[~gen_muon_eta_cut]
+
+    # Get the gendimuon id
+    gen_idx = get_gendimu_id(muon, genpart, ak.ArrayBuilder()).snapshot()
+    
+    valid_idx = (gen_idx.muon0 > -1) & (gen_idx.muon1 > -1) & (gen_idx.dimu > -1)
+    gen_idx = gen_idx[valid_idx]
+    dimu = dimu[valid_idx]
+    muon = muon[valid_idx]
+    
+    dimu_gen = ak.zip({'0': dimu, '1': genpart[gen_idx.dimu]})
+    muon0_gen = ak.zip({'0': muon.slot0, '1': genpart[gen_idx.muon0]})
+    muon1_gen = ak.zip({'0': muon.slot1, '1': genpart[gen_idx.muon1]})
+    
+    ##### To control variables
+    '''for i0 in range(len(dimu_gen['0'])):
+        if len(dimu_gen['0']) == 0: continue
+        print(f"Event: {i0}")
+        for i1 in range(len(dimu_gen['0'][i0])):
+            print(f"dimu, mu1, mu2: ({dimu_gen['1'][i0][i1].pdgId}, {muon0_gen['1'][i0][i1].pdgId}, {muon1_gen['1'][i0][i1].pdgId}")'''
+    
+    return dimu_gen, muon0_gen, muon1_gen
+
 
 class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
     def __init__(self, analyzer_name):
@@ -81,9 +107,9 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         ############### Get the gen particles ############### 
 
         # All gen particles
-        Gen_particles = ak.zip({**get_vars_dict(events, gen_part_cols)})
+        Gen_particles = ak.zip({**get_vars_dict(events, gen_part_cols)}, with_name="PtEtaPhiMCandidate")
         # Gen Muons
-        Gen_Muon = Gen_particles[(Gen_particles.pdgId == 13) | (Gen_particles.pdgId == -13)]
+        Gen_Muon = Gen_particles[np.absolute(Gen_particles.pdgId) == 13]
         # Gen Jpsi
         Gen_Jpsi = Gen_particles[Gen_particles.pdgId == 443]
         # Gen Psi(2S)
@@ -93,8 +119,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         # Gen D0
         Gen_D0 = Gen_particles[(Gen_particles.pdgId == 421) | (Gen_particles.pdgId == -421)]
         # Gen Dstar
-        Gen_Dstar_all = Gen_particles[(Gen_particles.pdgId == 413) | (Gen_particles.pdgId == -413)]
-        Gen_Dstar = Gen_Dstar_all
+        Gen_Dstar = Gen_particles[(Gen_particles.pdgId == 413) | (Gen_particles.pdgId == -413)]
                               
         ############### Get All the interesting candidates from NTuples
         Dimu = ak.zip({**get_vars_dict(events, dimu_cols)}, with_name="PtEtaPhiMCandidate")
@@ -142,12 +167,18 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
             # Assign 1 to all events.
             trigger_cut = np.ones(len(Dimu), dtype=bool)
 
+        # Trigger filter for gen particles
+        Gen_Muon = Gen_Muon[trigger_cut]
+        Gen_Jpsi = Gen_Jpsi[trigger_cut]
+        Gen_Dstar = Gen_Dstar[trigger_cut]
+
         ############### Dimu cuts charge = 0, mass cuts and chi2...
         Dimu = Dimu[trigger_cut]
         Dimu = Dimu[Dimu.charge == 0]
         output['cutflow']['Dimu 0 charge'] += ak.sum(ak.num(Dimu))
 
-        Dimu = Dimu[((Dimu.mass > 8.5) & (Dimu.mass < 11.5)) | ((Dimu.mass > 2.9) & (Dimu.mass < 3.3)) | ((Dimu.mass > 3.35) & (Dimu.mass < 4.05))]
+        #Dimu = Dimu[((Dimu.mass > 8.5) & (Dimu.mass < 11.5)) | ((Dimu.mass > 2.9) & (Dimu.mass < 3.3)) | ((Dimu.mass > 3.35) & (Dimu.mass < 4.05))]
+        Dimu = Dimu[(Dimu.mass > 2.95) & (Dimu.mass < 3.25)]
         output['cutflow']['Quarkonia mass'] += ak.sum(ak.num(Dimu))
         
         # Prompt/nomprompt cut for jpsi
@@ -166,8 +197,8 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
 
         # SoftId and Global Muon cuts
         soft_id = (Muon.slot0.softId > 0) & (Muon.slot1.softId > 0)
-        Dimu = Dimu[soft_id]
-        Muon = Muon[soft_id]
+        Dimu = Dimu[soft_id] 
+        Muon = Muon[soft_id] 
         output['cutflow']['Dimu muon softId'] += ak.sum(ak.num(Dimu))
 
         #!!!!!!!!!!!!!!!!! We decided to remove the global cuts !!!!!!!! #
@@ -183,7 +214,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
 
         else:
             
-            muon_pt_cut = (Muon.slot0.pt > 3) & (Muon.slot1.pt > 3)
+            muon_pt_cut = (Muon.slot0.pt > 3) & (Muon.slot1.pt > 3) 
         
         Dimu = Dimu[muon_pt_cut]
         Muon = Muon[muon_pt_cut]
@@ -195,18 +226,48 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         
         output['cutflow']['Dimu muon eta cut'] += ak.sum(ak.num(Dimu))
 
-        ############### Muons matching
-        #Gen_muon_match = [((Gen_particles.pdgId == -13) | (Gen_particles.pdgId == 13)) & (Gen_particles.parpdgId == 443)]
-        
-        #muon1_gen, muon2_gen, dimu_gen = dimu_match(Muon, Dimu, Gen_particles)                  
-       
-        Dimu_match = Dimu
-        
+        # Dimu and muon matching
+        dimu_gen, muon0_gen, muon1_gen = dimu_match(Muon, Dimu, Gen_particles) #dimu_gen: rec dimuon + gen dimuon
+
+        # Cut for gen jpsi
+        last_element = ak.cartesian([ak.num(Gen_Jpsi)-1, ak.Array([[1]])]).slot0
+        Gen_Jpsi = Gen_Jpsi[last_element]
+
+        ## Gen muon cuts
+
+        # gen muon pT
+        gen_muon_pt_cut = Gen_Muon.pt > 3
+        Gen_Muon = Gen_Muon[gen_muon_pt_cut]
+
+        # gen muon eta
+        gen_muon_eta_cut = (np.absolute(Gen_Muon.eta) <= 2.4)
+        Gen_Muon = Gen_Muon[gen_muon_eta_cut]
+
+        # Take events with always two muons
+        two_muons_cut = ak.num(Gen_Muon) == 2
+
+        # Filter the events
+        Gen_Jpsi = Gen_Jpsi[two_muons_cut]
+        Gen_Muon = Gen_Muon[two_muons_cut]
+
+        # Takes gen muon with the same mother
+        Gen_Muon = ak.combinations(Gen_Muon, 2)
+        same_mother = ((Gen_Muon.slot0.genPartIdxMother == Gen_Muon.slot1.genPartIdxMother) & (Gen_Muon.slot0.parpdgId == 443))
+                        
+        Gen_Muon = Gen_Muon[same_mother]
+
         ## Ressonances cuts
+
+        # Retrieves matched muon
+        #Dimu = dimu_gen.slot0
+
+        '''##### Test for efficiency !!!!
+        print("Efficiency!!!!!!!!!")
+        print(ak.sum(ak.num(dimu_gen.slot0))/ak.sum(ak.num(Gen_Jpsi)) * 100) '''
 
         # Non matched
         Dimu['is_ups'] = (Dimu.mass > 8.5) & (Dimu.mass < 11.5)
-        Dimu['is_jpsi'] = (Dimu.mass > 2.9) & (Dimu.mass < 3.3)
+        Dimu['is_jpsi'] = (Dimu.mass > 2.95) & (Dimu.mass < 3.25)
         Dimu['is_psi'] = (Dimu.mass > 3.35) & (Dimu.mass < 4.05)
 
         # Matched
@@ -325,12 +386,9 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
 
         Dstar['wrg_chg'] = (Dstar.Kchg == Dstar.pichg)
 
-        #################### Dstar Matching
-
-        # Trigger filter
-        Gen_Dstar_all = Gen_Dstar_all[trigger_cut]
+        #################### Dstar Matching (TO BE ADDED IN THE FUTURE!!!!!!)
         
-        # If statment to avoid null array.
+        '''# If statment to avoid null array.
         if (ak.sum(ak.num(Dstar)) != 0):
             # Associate each gen and each reco Dstar
             Dstar_match = ak.cartesian([Dstar, Gen_Dstar_all])
@@ -340,7 +398,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
             Dstar_match= Dstar_match[ak.num(Dstar_match) > 0]
         else:
             Dstar_match = ak.cartesian([Dstar, Gen_Dstar_all])    
-            Dstar_match = Dstar_match[ak.num(Dstar_match) > 0]
+            Dstar_match = Dstar_match[ak.num(Dstar_match) > 0]'''
             
         ## Build the associated candidates
             
@@ -368,10 +426,10 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
 
         ############### Final computation of number of objects
         output['cutflow']['Dimu final']    += ak.sum(ak.num(Dimu))
-        output['cutflow']['Dimu final']    += ak.sum(ak.num(Dimu_match))
+        #output['cutflow']['Dimu final']    += ak.sum(ak.num(Dimu_match))
         output['cutflow']['D0 final']      += ak.sum(ak.num(D0))
         output['cutflow']['Dstar final']   += ak.sum(ak.num(Dstar))
-        output['cutflow']['Dstar matched final']    += ak.sum(ak.num(Dstar_match.slot0))
+        #output['cutflow']['Dstar matched final']    += ak.sum(ak.num(Dstar_match.slot0))
         
         ############### Leading and Trailing muon separation Gen_particles
         leading_mu = (Muon.slot0.pt > Muon.slot1.pt)
@@ -442,14 +500,14 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         gen_d0_acc = processor.dict_accumulator({})
         for var in Gen_D0.fields:
             gen_d0_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_D0[var])))
-        gen_d0_acc['nGenD0'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_D0[var])))
+        gen_d0_acc['nGenD0'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_D0)))
         output["Gen_D0"] = gen_d0_acc
 
         # Gen Dstar accumulator
         gen_dstar_acc = processor.dict_accumulator({})
         for var in Gen_Dstar.fields:
             gen_dstar_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Gen_Dstar[var])))
-        gen_dstar_acc['nGenDstar'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_Dstar[var])))
+        gen_dstar_acc['nGenDstar'] = processor.column_accumulator(ak.to_numpy(ak.num(Gen_Dstar)))
         output["Gen_Dstar"] = gen_dstar_acc
             
         muon_lead_acc = processor.dict_accumulator({})
@@ -471,12 +529,12 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         dimu_acc["nDimu"] = processor.column_accumulator(ak.to_numpy(ak.num(Dimu)))
         output["Dimu"] = dimu_acc
 
-        dimu_match_acc = processor.dict_accumulator({})
+        """ dimu_match_acc = processor.dict_accumulator({})
         for var in Dimu_match.fields:
             if (var.startswith('t')): continue
             dimu_match_acc[var] = processor.column_accumulator(ak.to_numpy(ak.flatten(Dimu_match[var])))
         dimu_match_acc["nDimu_match"] = processor.column_accumulator(ak.to_numpy(ak.num(Dimu_match)))
-        output["Dimu_match"] = dimu_match_acc
+        output["Dimu_match"] = dimu_match_acc """
 
         D0_acc = processor.dict_accumulator({})
         D0_trk_acc = processor.dict_accumulator({})
@@ -504,8 +562,8 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         output["Dstar_D0"] = Dstar_D0_acc
         output["Dstar_trk"] = Dstar_trk_acc
 
-        ## Matched Dstar accumulator        
-        Dstar_match_acc = processor.dict_accumulator({})
+        ## Matched Dstar accumulator      (TO BE ADDED IN THE FUTURE)   
+        '''Dstar_match_acc = processor.dict_accumulator({})
         Dstar_match_D0_acc = processor.dict_accumulator({})
         Dstar_match_trk_acc = processor.dict_accumulator({})
         for var in Dstar_match.slot0.fields:
@@ -518,7 +576,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         Dstar_match_acc["nDstar"] = processor.column_accumulator(ak.to_numpy(ak.num(Dstar_match.slot0)))
         output["Dstar_match"] = Dstar_match_acc
         output["Dstar_match_D0"] = Dstar_match_D0_acc
-        output["Dstar_match_trk"] = Dstar_trk_acc
+        output["Dstar_match_trk"] = Dstar_trk_acc'''
         
 
         # Accumulator for the associated candidates

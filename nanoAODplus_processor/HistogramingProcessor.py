@@ -333,7 +333,7 @@ class HistogramingProcessor(processor.ProcessorABC):
         #print(len(DimuDstar_acc['nDimuDstar'].value))
 
         # Trigger cut
-        hlt = True
+        hlt = False
         hlt_filter = ['HLT_Dimuon0_Jpsi', 'HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi']
         HLT_acc = HLT_2017_acc
 

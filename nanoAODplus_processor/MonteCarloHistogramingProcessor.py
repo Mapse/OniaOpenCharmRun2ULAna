@@ -55,7 +55,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
             'Jpsi_mass': hist.Hist("Events", hist.Bin("mass", "$M_{\mu^+\mu^-}$ [GeV]", 100, 2.95, 3.25)),
             'Jpsi_match_mass': hist.Hist("Events", hist.Bin("mass", "$M_{\mu^+\mu^-}$ [GeV]", 100, 2.95, 3.25)),
             'Jpsi_p': hist.Hist("Events", 
-                                   hist.Bin("pt", "$p_{T,\mu^+\mu^-}$ [GeV]", 100, 0, 100),
+                                   hist.Bin("pt", "$p_{T,\mu^+\mu^-}$ [GeV]", 60, 0, 100),
                                    hist.Bin("eta", "$\eta_{\mu^+\mu^-}$", 60, -2.5, 2.5),
                                    hist.Bin("phi", "$\phi_{\mu^+\mu^-}$", 70, -3.5, 3.5)),
             'Jpsi_rap': hist.Hist("Events", hist.Bin("rap", "y", 60, -2.5, 2.5)),
@@ -252,8 +252,8 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
                                    hist.Bin("phi", "$\phi_{\mu}$", 40, -3.5, 3.5)),
          'GenJpsi_mass': hist.Hist("Events", hist.Bin("mass", "Gen jpsi", 10, 2.95, 3.25)),
          'GenJpsi_p': hist.Hist("Events", 
-                                hist.Bin("pt", "$p_{T,\mu^+\mu^-}$ [GeV]", 100, 0, 100),
-                                hist.Bin("eta", "$\eta_{\mu^+\mu^-}$", 60, -2.5, 2.5),
+                                hist.Bin("pt", "$p_{T,\mu^+\mu^-}$ [GeV]", 10, 0, 100),
+                                hist.Bin("eta", "$\eta_{\mu^+\mu^-}$", 10, -2.5, 2.5),
                                 hist.Bin("phi", "$\phi_{\mu^+\mu^-}$", 70, -3.5, 3.5)),
          'GenJpsi_vx': hist.Hist("Events", hist.Bin("VertexX", "Vertex x [cm]", 100, -0.1, 0.1)),
          'GenJpsi_vy': hist.Hist("Events", hist.Bin("VertexY", "Vertex y [cm]", 100, -0.05, 0.15)),
@@ -301,11 +301,11 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         Muon_lead_acc = acc['Muon_lead']
         Muon_trail_acc = acc['Muon_trail']
         Dimu_acc = acc['Dimu']
-        Dimu_match_acc = acc['Dimu_match']
+        #Dimu_match_acc = acc['Dimu_match']
         D0_acc = acc['D0']
         D0_trk_acc = acc['D0_trk']
         Dstar_acc = acc['Dstar']
-        Dstar_match_acc = acc['Dstar_match']
+        #Dstar_match_acc = acc['Dstar_match'] TO BE ADDED IN THE FUTURE
         Dstar_trk_acc = acc['Dstar_trk']
         DimuDstar_acc = acc['DimuDstar']
        
@@ -340,6 +340,24 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
 
         ##### Creates coffea lorentz vector to apply trigger on the data #####
 
+        ### Gen particles ###
+
+        # Gen Jpsi
+        Gen_jpsi = ak.zip({
+            'pt' : Gen_Jpsi_acc['pt'].value,
+            'eta' : Gen_Jpsi_acc['eta'].value,
+            'phi' : Gen_Jpsi_acc['phi'].value,}, with_name='PtEtaPhiMCandidate') 
+
+        Gen_jpsi = ak.unflatten(Gen_jpsi, Gen_Jpsi_acc['nGenJpsi'].value)
+
+        # Gen Dstar
+        Gen_dstar = ak.zip({
+            'pt' : Gen_Dstar_acc['pt'].value,
+            'eta' : Gen_Dstar_acc['eta'].value,
+            'phi' : Gen_Dstar_acc['phi'].value,}, with_name='PtEtaPhiMCandidate') 
+            
+        Gen_dstar = ak.unflatten(Gen_dstar, Gen_Dstar_acc['nGenDstar'].value)
+        
         ## Muon lead collection
 
         # Creates the pt, eta, phi, m lorentz vector.
@@ -425,9 +443,9 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         #print(len(DimuDstar_acc['nDimuDstar'].value))
 
         # Trigger cut
-        hlt = True
+        hlt = False
         #hlt_filter = ['HLT_Dimuon0_Jpsi', 'HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi'] #2017
-        hlt_filter = ['HLT_Dimuon25_Jpsi']
+        hlt_filter = ['HLT_Dimuon20_Jpsi_Barrel_Seagulls']
         #hlt_filter = ['HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi', 'HLT_DoubleMu4_3_Jpsi']  #2018
         HLT_acc = HLT_2017_acc
 
@@ -437,6 +455,20 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
             trigger_cut = HLT_acc[hlt_filter[0]].value
             for i in range(0, len(hlt_filter)):
                 trigger_cut |= HLT_acc[hlt_filter[i]].value
+
+            # Gen Jpsi collection
+            Gen_jpsi = Gen_jpsi[trigger_cut]
+            
+            gen_jpsi_pt = ak.flatten(Gen_jpsi.pt)
+            gen_jpsi_eta = ak.flatten(Gen_jpsi.eta)
+            gen_jpsi_phi = ak.flatten(Gen_jpsi.phi)
+
+            # Gen JpsDstar collection
+            Gen_dstar = Gen_dstar[trigger_cut]
+           
+            gen_dstar_pt = ak.flatten(Gen_dstar.pt)
+            gen_dstar_eta = ak.flatten(Gen_dstar.eta)
+            gen_dstar_phi = ak.flatten(Gen_dstar.phi)
 
             # Apply trigger to pileup corrections
             corrections = corrections[trigger_cut]
@@ -559,6 +591,16 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
             print("You are not running with trigger")
             trigger_cut = np.ones(len(Dimu), dtype=bool)
 
+            # Gen Jpsi collection            
+            gen_jpsi_pt = Gen_Jpsi_acc['pt'].value
+            gen_jpsi_eta = Gen_Jpsi_acc['eta'].value
+            gen_jpsi_phi = Gen_Jpsi_acc['phi'].value
+
+            # Gen Dstar collection           
+            gen_dstar_pt = Gen_Dstar_acc['pt'].value
+            gen_dstar_eta = Gen_Dstar_acc['eta'].value
+            gen_dstar_phi = Gen_Dstar_acc['phi'].value
+
             # Pileup corrections for muon lead
             correcto_muon_lead = np.repeat(corrections, ak.num(Muon_lead))
             
@@ -663,6 +705,16 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
 
         # Primary vertex
         output['nPVtx'].fill(nPVtx=Primary_vertex_acc['nPVtx'].value)
+
+        # Gen Jpsi
+        output['GenJpsi_p'].fill(pt=gen_jpsi_pt,
+                                 eta=gen_jpsi_eta,
+                                 phi=gen_jpsi_phi)
+        
+        # Gen Dstar
+        output['GenDstar_p'].fill(pt=gen_dstar_pt,
+                                 eta=gen_dstar_eta,
+                                 phi=gen_dstar_phi)
         
         #Muon
         output['Muon_lead_p'].fill(pt=muon_lead_pt,

@@ -127,11 +127,11 @@ def fit2DJpsiDstar():
     result = model2D.fitTo(data, ROOT.RooFit.Save())
     # Print the results on screen
     result.floatParsFinal().Print("S")
-    
+
     ## Canvas definitions 
 
     # Canvas for Jpsi 
-    #c1 = ROOT.TCanvas("c1")
+    c1 = ROOT.TCanvas("c1")
     
     # Fame for Jpsi
     frame_jpsi = jpsi_mass.frame(ROOT.RooFit.Title("Dimuon Invariant mass"))
@@ -141,12 +141,12 @@ def fit2DJpsiDstar():
     data.plotOn(frame_jpsi, ROOT.RooFit.Name("Data"), ROOT.RooFit.DataError(ROOT.RooAbsData.SumW2))
 
     # Plot the Jpsi signal
-    jpsi_model.plotOn(frame_jpsi, ROOT.RooFit.Name("Signal"), ROOT.RooFit.Components("gauss,crystal_ball"),
-                   ROOT.RooFit.LineStyle(config.styles["signal"]), ROOT.RooFit.LineColor(config.colors["signal"]))
+    """ jpsi_model.plotOn(frame_jpsi, ROOT.RooFit.Name("Signal"), ROOT.RooFit.Components("gauss,crystal_ball"),
+                   ROOT.RooFit.LineStyle(config.styles["signal"]), ROOT.RooFit.LineColor(config.colors["signal"])) """
     
     # Plot for Jpsi background
-    jpsi_model.plotOn(frame_jpsi, ROOT.RooFit.Name("Background"), ROOT.RooFit.Components("back_exp"),
-                   ROOT.RooFit.LineStyle(config.styles["background"]), ROOT.RooFit.LineColor(config.colors["background"]))
+    """ jpsi_model.plotOn(frame_jpsi, ROOT.RooFit.Name("Background"), ROOT.RooFit.Components("back_exp"),
+                   ROOT.RooFit.LineStyle(config.styles["background"]), ROOT.RooFit.LineColor(config.colors["background"])) """
 
     # Plot for the Model
     jpsi_model.plotOn(frame_jpsi, ROOT.RooFit.Name("Model"), ROOT.RooFit.LineStyle(config.styles["model"]),
@@ -158,13 +158,25 @@ def fit2DJpsiDstar():
     leg_jpsi.AddEntry(frame_jpsi.findObject("Signal"), "Signal Fit", "L")
     leg_jpsi.AddEntry(frame_jpsi.findObject("Background"), "Background fit", "L")
 
-    """ frame_jpsi.Draw()
+    frame_jpsi.Draw()
     leg_jpsi.Draw("same")
     c1.Draw()
-    c1.SaveAs(config.dict_fls["save_fit_jpsi"]) """
+
+    ## Legend
+    
+    jpsi_leg = ROOT.TLatex()
+    jpsi_leg.SetNDC()
+    jpsi_leg.SetTextFont(43)
+    jpsi_leg.SetTextSize(30)
+    jpsi_leg.SetTextAlign(13)
+    jpsi_leg.DrawLatex(.10,.95,"#bf{CMS} #scale[0.7]{#it{Preliminary}}")
+    jpsi_leg.SetTextSize(20)
+    jpsi_leg.DrawLatex(.80,.94 , config.lumi) 
+
+    c1.SaveAs(config.dict_fls["save_fit_jpsi"])
       
     # Canvas for Dstar 
-    c2 = ROOT.TCanvas("Dstar Canvas")
+    #c2 = ROOT.TCanvas("Dstar Canvas")
 
     # Frame
     frame_dstar = dstar_mass.frame(ROOT.RooFit.Title("Dstar delta m"))
@@ -173,13 +185,13 @@ def fit2DJpsiDstar():
     # Dstar data
     data.plotOn(frame_dstar, ROOT.RooFit.Name("Data"), ROOT.RooFit.DataError(ROOT.RooAbsData.SumW2))
     
-    # Dstar signal
+    """ # Dstar signal
     dstar_model.plotOn(frame_dstar, ROOT.RooFit.Name("Signal"), ROOT.RooFit.Components("gauss1,gauss2"),
                     ROOT.RooFit.LineStyle(config.styles["signal"]), ROOT.RooFit.LineColor(config.colors["signal"]))
 
     # Dstar background
     dstar_model.plotOn(frame_dstar, ROOT.RooFit.Name("Background"), ROOT.RooFit.Components("dstar_bkg"),
-                    ROOT.RooFit.LineStyle(config.styles["background"]), ROOT.RooFit.LineColor(config.colors["background"]))
+                    ROOT.RooFit.LineStyle(config.styles["background"]), ROOT.RooFit.LineColor(config.colors["background"])) """
     
     # Dstar Model
     dstar_model.plotOn(frame_dstar, ROOT.RooFit.Name("Model"), ROOT.RooFit.LineStyle(config.styles["model"]),
@@ -192,10 +204,22 @@ def fit2DJpsiDstar():
     leg_dstar.AddEntry(frame_dstar.findObject("Signal"), "Signal Fit", "L")
     leg_dstar.AddEntry(frame_dstar.findObject("Background"), "Background fit", "L")
 
-    frame_dstar.Draw()
+    """ frame_dstar.Draw()
     leg_dstar.Draw("same")
     c2.Draw()
-    c2.SaveAs(config.dict_fls["save_fit_dstar"])
+
+    ## Legend
+    
+    dstar_leg = ROOT.TLatex()
+    dstar_leg.SetNDC()
+    dstar_leg.SetTextFont(43)
+    dstar_leg.SetTextSize(30)
+    dstar_leg.SetTextAlign(13)
+    dstar_leg.DrawLatex(.10,.95,"#bf{CMS} #scale[0.7]{#it{Preliminary}}")
+    dstar_leg.SetTextSize(20)
+    dstar_leg.DrawLatex(.80,.94 , config.lumi)    
+
+    c2.SaveAs(config.dict_fls["save_fit_dstar"]) """
 
     """ # Mass correlation
     c3 = ROOT.TCanvas("Mass correlation")

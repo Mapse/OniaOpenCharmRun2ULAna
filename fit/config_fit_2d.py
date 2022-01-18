@@ -22,6 +22,8 @@ ERAS = ['B', 'C', 'D', 'E', 'F']
 save_path = "/afs/cern.ch/work/m/mabarros/public/CMSSW_10_6_12/src/OniaOpenCharmRun2ULAna/fit/Data_to_fit/"
 # Datasets
 dataset = "Charmonium2017"
+# Luminosity
+lumi = "41.5 fb^{-1}"
 
 dict_fls = {
     # Workspace name
