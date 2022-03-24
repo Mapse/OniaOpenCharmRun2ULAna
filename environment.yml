@@ -12,3 +12,4 @@ dependencies:
 #  - jupyterlab-system-monitor
   - pip:
     - pyyaml
+#    - python-telegram-bot

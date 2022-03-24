@@ -160,8 +160,8 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         # Trigger choice
         if hlt:
             print(f"You are running with the trigger: {hlt_filter}")
-            trigger_cut = hlt_char_2017[hlt_filter]
-            hlt_char_2017 = hlt_char_2017[hlt_filter]
+            trigger_cut = hlt_char_2018[hlt_filter]
+            hlt_char_2018 = hlt_char_2018[hlt_filter]
         if not hlt:
             print("You are not running with trigger")
             # Assign 1 to all events.
@@ -385,6 +385,7 @@ class MonteCarloEventSelectorProcessor(processor.ProcessorABC):
         output['cutflow']['Dstar D0 dlSig cut'] += ak.sum(ak.num(Dstar))
 
         Dstar['wrg_chg'] = (Dstar.Kchg == Dstar.pichg)
+        Dstar = Dstar[~Dstar.wrg_chg]
 
         #################### Dstar Matching (TO BE ADDED IN THE FUTURE!!!!!!)
         

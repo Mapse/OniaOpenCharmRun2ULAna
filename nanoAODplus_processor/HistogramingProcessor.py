@@ -97,6 +97,9 @@ class HistogramingProcessor(processor.ProcessorABC):
             'Dstar_deltamr': hist.Hist("Events", 
                                        hist.Cat("chg", "charge"), 
                                        hist.Bin("deltamr", "$\Delta m_{refit}$ [GeV]", 50, 0.138, 0.162)),
+            'Dstar_D0cosphi' : hist.Hist("Events",
+                                         hist.Cat("chg", "charge"),
+                                         hist.Bin("cosphi", r"$cos(\alpha)$", 50, -1, 1)),
             'Dstar_K_p': hist.Hist("Events", 
                                    hist.Bin("pt", "$p_{T,D* K}$ [GeV]", 100, 0, 30),
                                    hist.Bin("eta", "$\eta_{D* K}$", 60, -2.5, 2.5),
@@ -228,12 +231,15 @@ class HistogramingProcessor(processor.ProcessorABC):
         D0_acc = acc['D0']
         D0_trk_acc = acc['D0_trk']
         Dstar_acc = acc['Dstar']
+        Dstar_D0_acc = acc['Dstar_D0']
         Dstar_trk_acc = acc['Dstar_trk']
         DimuDstar_acc = acc['DimuDstar']
         Primary_vertex_acc = acc['Primary_vertex'] 
         HLT_2017_acc = acc['HLT_2017']
         HLT_2018_acc = acc['HLT_2018']
         DimuDstar_p4 = build_p4(DimuDstar_acc)
+
+        
 
         ######################## Cuts ######################## 
 
@@ -298,6 +304,7 @@ class HistogramingProcessor(processor.ProcessorABC):
             'charge' : Dstar_acc['charge'].value,
             'deltam' : Dstar_acc['deltam'].value,
             'deltamr' : Dstar_acc['deltamr'].value,
+            'D0cosphi' : Dstar_D0_acc['D0cosphi'].value,
             'wrg_chg' : Dstar_acc['wrg_chg'].value}, with_name='PtEtaPhiMCandidate') 
 
         # Uses unflatten with the number of Dimuon in order to apply trigger correction
@@ -396,6 +403,10 @@ class HistogramingProcessor(processor.ProcessorABC):
             dstar_right_charge_deltamr = ak.flatten(dstar_right_charge.deltamr)
             dstar_wrong_charge_deltamr = ak.flatten(dstar_wrong_charge.deltamr)
 
+            # Vertex alignment 
+            dstar_right_charge_cosphi = ak.flatten(dstar_right_charge.D0cosphi)
+            dstar_wrong_charge_cosphi = ak.flatten(dstar_wrong_charge.D0cosphi)
+
             ## DimuDstar collection
             DimuDstar = DimuDstar[trigger_cut]
             DimuDstar = DimuDstar[DimuDstar.is_jpsi]
@@ -476,6 +487,10 @@ class HistogramingProcessor(processor.ProcessorABC):
             dstar_right_charge_deltamr = Dstar_acc['deltam'].value[~Dstar_acc['wrg_chg'].value]
             dstar_wrong_charge_deltamr = Dstar_acc['deltam'].value[Dstar_acc['wrg_chg'].value]
 
+            # Vertex alignment 
+            dstar_right_charge_cosphi = Dstar_D0_acc['D0cosphi'].value[~Dstar_acc['wrg_chg'].value] 
+            dstar_wrong_charge_cosphi = Dstar_D0_acc['D0cosphi'].value[Dstar_acc['wrg_chg'].value]
+
             ## DimuonDstar
 
             # Filters for jpsi and dstar
@@ -512,9 +527,6 @@ class HistogramingProcessor(processor.ProcessorABC):
             dimuon_dstar_mass = DimuDstar_p4.mass[is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar]
 
 
-
-
-    
         # Primary vertex
         #print(Primary_vertex_acc)
         output['PV_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
@@ -607,7 +619,8 @@ class HistogramingProcessor(processor.ProcessorABC):
         output['Dstar_deltamr'].fill(chg='wrong charge', deltamr=dstar_wrong_charge_deltam)
         output['Dstar_deltam'].fill(chg='right charge', deltam=dstar_right_charge_deltamr)
         output['Dstar_deltam'].fill(chg='wrong charge', deltam=dstar_wrong_charge_deltamr)
-        
+        output['Dstar_D0cosphi'].fill(chg='right charge', cosphi=dstar_right_charge_cosphi)
+        output['Dstar_D0cosphi'].fill(chg='wrong charge', cosphi=dstar_wrong_charge_cosphi)
         # Dstar trks
         output['Dstar_K_p'].fill(pt=Dstar_trk_acc['Kpt'].value[~Dstar_acc['wrg_chg'].value],
                                  eta=Dstar_trk_acc['Keta'].value[~Dstar_acc['wrg_chg'].value],

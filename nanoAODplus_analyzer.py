@@ -45,7 +45,7 @@ if (args.select or args.analyze):
 
     ''' Monte Carlo '''
 
-    files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:]}
+    files = {'MonteCarlo2017AOD': filesets['MonteCarlo2017AOD'][:500]}
     #files = {'MonteCarlo2018AOD': filesets['MonteCarlo2018AOD'][:]}
 
     ## Guns

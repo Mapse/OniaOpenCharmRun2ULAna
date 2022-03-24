@@ -113,6 +113,9 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
             'Dstar_deltamr': hist.Hist("Events", 
                                        hist.Cat("chg", "charge"), 
                                        hist.Bin("deltamr", "$\Delta m_{refit}$ [GeV]", 50, 0.138, 0.162)),
+            'Dstar_D0cosphi' : hist.Hist("Events",
+                                         hist.Cat("chg", "charge"),
+                                         hist.Bin("cosphi", r"$cos(\alpha)$", 50, -1, 1)),
             'Dstar_K_p': hist.Hist("Events", 
                                    hist.Bin("pt", "$p_{T,D* K}$ [GeV]", 100, 0, 30),
                                    hist.Bin("eta", "$\eta_{D* K}$", 60, -2.5, 2.5),
@@ -218,6 +221,9 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
                 'Dstar_deltamr': hist.Hist("Events", 
                                         hist.Cat("chg", "charge"), 
                                         hist.Bin("deltamr", "$\Delta m_{refit}$ [GeV]", 50, 0.138, 0.162)),
+                'reco_dstar_dimu' : hist.Hist("Events", 
+                                    hist.Bin("dstar_pt", r"$p_{T, reco D*} [GeV]$", 45, 0, 15),
+                                    hist.Bin("dimu_pt", r"$p_{T, reco J/\Psi}$ [GeV]", 60, 0, 30)),
             }),
             'PsiDstar': processor.dict_accumulator({
                 'Psi_mass': hist.Hist("Events", hist.Bin("mass", "$M_{\mu^+\mu^-}$ [GeV]", 100, 3.40, 4.00)), 
@@ -305,6 +311,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         D0_acc = acc['D0']
         D0_trk_acc = acc['D0_trk']
         Dstar_acc = acc['Dstar']
+        Dstar_D0_acc = acc['Dstar_D0']
         #Dstar_match_acc = acc['Dstar_match'] TO BE ADDED IN THE FUTURE
         Dstar_trk_acc = acc['Dstar_trk']
         DimuDstar_acc = acc['DimuDstar']
@@ -334,6 +341,8 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         is_psi = DimuDstar_acc['Dimu']['is_psi'].value
         wrg_chg = DimuDstar_acc['Dstar']['wrg_chg'].value
 
+        ## Muons cuts
+        
         # Cut in the significance of the decay length.
         dlSig = (DimuDstar_acc['Dimu']['dlSig'].value < 1000000)
         dlSig_D0Dstar = (DimuDstar_acc['Dstar']['D0dlSig'].value  < 1000000) 
@@ -395,7 +404,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
 
         # Uses unflatten with the number of Dimuon in order to apply trigger correction
         Dimu = ak.unflatten(Dimu, Dimu_acc['nDimu'].value)
-
+        
         ## Dstar collection
 
         # Creates the pt, eta, phi, m lorentz vector.
@@ -408,6 +417,7 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
             'charge' : Dstar_acc['charge'].value,
             'deltam' : Dstar_acc['deltam'].value,
             'deltamr' : Dstar_acc['deltamr'].value,
+            'D0cosphi' : Dstar_D0_acc['D0cosphi'].value, 
             'wrg_chg' : Dstar_acc['wrg_chg'].value}, with_name='PtEtaPhiMCandidate') 
 
         # Uses unflatten with the number of Dimuon in order to apply trigger correction
@@ -445,9 +455,9 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         # Trigger cut
         hlt = False
         #hlt_filter = ['HLT_Dimuon0_Jpsi', 'HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi'] #2017
-        hlt_filter = ['HLT_Dimuon20_Jpsi_Barrel_Seagulls']
+        #hlt_filter = ['HLT_Dimuon20_Jpsi_Barrel_Seagulls']
         #hlt_filter = ['HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi', 'HLT_DoubleMu4_3_Jpsi']  #2018
-        HLT_acc = HLT_2017_acc
+        HLT_acc = HLT_2018_acc
 
         if hlt:
             print(f"You are running with the trigger(s): {hlt_filter}")
@@ -538,6 +548,10 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
 
             dstar_right_charge_deltamr = ak.flatten(dstar_right_charge.deltamr)
             dstar_wrong_charge_deltamr = ak.flatten(dstar_wrong_charge.deltamr)
+
+            # Vertex alignment 
+            dstar_right_charge_cosphi = ak.flatten(dstar_right_charge.D0cosphi)
+            dstar_wrong_charge_cosphi = ak.flatten(dstar_wrong_charge.D0cosphi)
 
             ## DimuDstar collection
             DimuDstar = DimuDstar[trigger_cut]
@@ -653,6 +667,10 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
 
             dstar_right_charge_deltamr = Dstar_acc['deltam'].value[~Dstar_acc['wrg_chg'].value]
             dstar_wrong_charge_deltamr = Dstar_acc['deltam'].value[Dstar_acc['wrg_chg'].value]
+
+            # Vertex alignment 
+            dstar_right_charge_cosphi = Dstar_D0_acc['D0cosphi'].value[~Dstar_acc['wrg_chg'].value] 
+            dstar_wrong_charge_cosphi = Dstar_D0_acc['D0cosphi'].value[Dstar_acc['wrg_chg'].value]
 
             ## DimuonDstar
 
@@ -803,7 +821,9 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
         output['Dstar_deltamr'].fill(chg='wrong charge', deltamr=dstar_wrong_charge_deltam, weight=correcto_dstar_wrong_charge)
         output['Dstar_deltam'].fill(chg='right charge', deltam=dstar_right_charge_deltamr, weight=correcto_dstar_right_charge)
         output['Dstar_deltam'].fill(chg='wrong charge', deltam=dstar_wrong_charge_deltamr, weight=correcto_dstar_wrong_charge)
-        
+        output['Dstar_D0cosphi'].fill(chg='right charge', cosphi=dstar_right_charge_cosphi, weight=correcto_dstar_right_charge)
+        output['Dstar_D0cosphi'].fill(chg='wrong charge', cosphi=dstar_wrong_charge_cosphi, weight=correcto_dstar_wrong_charge)
+
         # Dstar trks
         '''output['Dstar_K_p'].fill(pt=Dstar_trk_acc['Kpt'].value[~Dstar_acc['wrg_chg'].value],
                                  eta=Dstar_trk_acc['Keta'].value[~Dstar_acc['wrg_chg'].value],
@@ -885,6 +905,9 @@ class MonteCarloHistogramingProcessor(processor.ProcessorABC):
                                             phi=dstar_asso_wrong_charge_phi, weight=correcto_dimu_dstar_wrong_charge)
         output['JpsiDstar']['Dstar_rap'].fill(chg='right charge', rap=dstar_asso_right_charge_rap, weight=correcto_dimu_dstar_right_charge)
         output['JpsiDstar']['Dstar_rap'].fill(chg='wrong charge', rap=dstar_asso_wrong_charge_rap, weight=correcto_dimu_dstar_wrong_charge)
+
+        output['JpsiDstar']['reco_dstar_dimu'].fill(dstar_pt=dstar_asso_right_charge_pt,
+                                                    dimu_pt=jpsi_asso_pt,)
 
         output['JpsiDstar']['JpsiDstar_deltarap'].fill(deltarap=dimuon_dstar_deltarap, weight=correcto_dimu_dstar)
         output['JpsiDstar']['JpsiDstar_mass'].fill(mass=dimuon_dstar_mass, weight=correcto_dimu_dstar)
