@@ -1,0 +1,6 @@
+Activate the environment
+
+conda install pip
+
+pip install python-telegram-bot
+

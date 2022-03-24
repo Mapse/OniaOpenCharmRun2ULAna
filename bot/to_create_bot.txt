@@ -1,0 +1,29 @@
+1. Search for @botfather on telegram 
+
+2. Click on botfather to start a conversation
+
+3. Type /start
+
+4. Type /newbot and follow the instructions given by the botfather
+
+5. Save the token:
+
+Ex: 5179895518:AAED9UEdn77LHaMXX7rmYeAcRcGzSYcnFPc
+
+# To get chat ID
+
+# https://stackoverflow.com/questions/32423837/telegram-bot-how-to-get-a-group-chat-id
+
+6. Get the list of updates for your BOT:
+
+https://api.telegram.org/bot<YourBOTToken>/getUpdates
+
+Ex:
+
+https://api.telegram.org/bot5179895518:AAED9UEdn77LHaMXX7rmYeAcRcGzSYcnFPc/getUpdates
+
+If you get this {"ok":true,"result":[]}, create a groupe, add the bot an try again.
+
+7. Go to bot_config and replace the token and the chat_id
+
+8. call the module and use the bot_message module! :)
