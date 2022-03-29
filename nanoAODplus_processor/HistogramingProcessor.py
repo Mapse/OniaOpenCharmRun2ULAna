@@ -18,7 +18,7 @@ class HistogramingProcessor(processor.ProcessorABC):
         self.analyzer_name = analyzer_name
         
         self._accumulator = processor.dict_accumulator({
-            'PV_npvs': hist.Hist("Events", hist.Bin("npvs", "Num of associated tracks", 50, 0, 100)), 
+            #'PV_npvs': hist.Hist("Events", hist.Bin("npvs", "Num of associated tracks", 50, 0, 100)), 
             'Muon_lead_p': hist.Hist("Events", 
                                    hist.Bin("pt", "$p_{T,\mu}$ [GeV]", 100, 0, 100),
                                    hist.Bin("eta", "$\eta_{\mu}$", 60, -2.5, 2.5),
@@ -225,6 +225,7 @@ class HistogramingProcessor(processor.ProcessorABC):
         output = self.accumulator.identity()
         acc = load(file)
 
+    
         Muon_lead_acc = acc['Muon_lead']
         Muon_trail_acc = acc['Muon_trail']
         Dimu_acc = acc['Dimu']
@@ -248,10 +249,14 @@ class HistogramingProcessor(processor.ProcessorABC):
         is_psi = DimuDstar_acc['Dimu']['is_psi'].value
         wrg_chg = DimuDstar_acc['Dstar']['wrg_chg'].value  
 
-        # Cut in the significance of the decay length.
+        # Cut in the significance of the decay length - Jpsi.
         dlSig = (DimuDstar_acc['Dimu']['dlSig'].value < 1000000)
         dlSig_D0Dstar = (DimuDstar_acc['Dstar']['D0dlSig'].value  < 1000000)  
-        
+
+        ## Dstar cuts
+
+        # Cut in D0 from D* pointing angle
+        #phi_D0Dstar = (DimuDstar_acc['Dstar']['D0cosphi'].value > 0.99)
         ##### Creates coffea lorentz vector to apply trigger on the data #####
 
         ## Muon lead collection
@@ -340,8 +345,9 @@ class HistogramingProcessor(processor.ProcessorABC):
         #print(len(DimuDstar_acc['nDimuDstar'].value))
 
         # Trigger cut
-        hlt = False
+        hlt = True
         hlt_filter = ['HLT_Dimuon0_Jpsi', 'HLT_Dimuon20_Jpsi_Barrel_Seagulls', 'HLT_Dimuon25_Jpsi']
+        #hlt_filter = ['HLT_Dimuon25_Jpsi']
         HLT_acc = HLT_2017_acc
 
         if hlt:
@@ -408,9 +414,17 @@ class HistogramingProcessor(processor.ProcessorABC):
             dstar_wrong_charge_cosphi = ak.flatten(dstar_wrong_charge.D0cosphi)
 
             ## DimuDstar collection
+
+            # Trigger cut
             DimuDstar = DimuDstar[trigger_cut]
+
+            # Takes Jpsi range
             DimuDstar = DimuDstar[DimuDstar.is_jpsi]
+
+            # Takes only right charge D*
             DimuDstar = DimuDstar[~DimuDstar.wrg_chg]
+            # Takes only wrong charge D*
+            DimuDstar_wrg = DimuDstar[DimuDstar.wrg_chg]
 
             # Associated jpsi
             jpsi_asso_mass = ak.flatten(DimuDstar.jpsi_mass)
@@ -419,9 +433,15 @@ class HistogramingProcessor(processor.ProcessorABC):
             jpsi_asso_phi = ak.flatten(DimuDstar.jpsi_phi)
             jpsi_asso_rap = ak.flatten(DimuDstar.jpsi_rap)
 
-            # Associated dstar
-            dimu_dstar_right_charge = DimuDstar
-            dimu_dstar_wrong_charge = DimuDstar[DimuDstar.wrg_chg]
+            ## Associated dstar
+
+            # Cuts
+            dstar_rgt_chg_cuts = is_jpsi & ~wrg_chg
+            dstar_wrg_chg_cuts = is_jpsi & wrg_chg
+
+            dimu_dstar_right_charge = DimuDstar[~DimuDstar.wrg_chg]
+            dimu_dstar_wrong_charge = DimuDstar_wrg
+
 
             dstar_asso_right_charge_deltamr = ak.flatten(dimu_dstar_right_charge.dstar_deltamr)
             dstar_asso_wrong_charge_deltamr = ak.flatten(dimu_dstar_wrong_charge.dstar_deltamr)
@@ -445,7 +465,7 @@ class HistogramingProcessor(processor.ProcessorABC):
             dimuon_dstar_mass = ak.flatten(DimuDstar.dimu_dstar_mass)
             
         if not hlt:
-            print("You are not running with trigger")
+            #print("You are not running with trigger")
             trigger_cut = np.ones(len(Dimu), dtype=bool)
             
             # Muon lead collection
@@ -505,22 +525,25 @@ class HistogramingProcessor(processor.ProcessorABC):
             jpsi_asso_rap = DimuDstar_acc['Dimu']['rap'].value[is_jpsi & ~wrg_chg]
 
             # Associated dstar
-            dstar_asso_right_charge_deltamr = DimuDstar_acc['Dstar']['deltamr'].value[is_jpsi & ~wrg_chg]
-            dstar_asso_wrong_charge_deltamr = DimuDstar_acc['Dstar']['deltamr'].value[is_jpsi & wrg_chg]
+            dstar_rgt_chg_cuts = is_jpsi & ~wrg_chg
+            dstar_wrg_chg_cuts = is_jpsi & wrg_chg
+
+            dstar_asso_right_charge_deltamr = DimuDstar_acc['Dstar']['deltamr'].value[dstar_rgt_chg_cuts]
+            dstar_asso_wrong_charge_deltamr = DimuDstar_acc['Dstar']['deltamr'].value[dstar_wrg_chg_cuts]
             
-            dstar_asso_right_charge_deltam = DimuDstar_acc['Dstar']['deltam'].value[is_jpsi & ~wrg_chg]
-            dstar_asso_wrong_charge_deltam = DimuDstar_acc['Dstar']['deltam'].value[is_jpsi & wrg_chg]
+            dstar_asso_right_charge_deltam = DimuDstar_acc['Dstar']['deltam'].value[dstar_rgt_chg_cuts]
+            dstar_asso_wrong_charge_deltam = DimuDstar_acc['Dstar']['deltam'].value[dstar_wrg_chg_cuts]
 
-            dstar_asso_right_charge_pt = DimuDstar_acc['Dstar']['pt'].value[is_jpsi & ~wrg_chg]
-            dstar_asso_right_charge_eta = DimuDstar_acc['Dstar']['eta'].value[is_jpsi & ~wrg_chg]
-            dstar_asso_right_charge_phi = DimuDstar_acc['Dstar']['phi'].value[is_jpsi & ~wrg_chg]
+            dstar_asso_right_charge_pt = DimuDstar_acc['Dstar']['pt'].value[dstar_rgt_chg_cuts]
+            dstar_asso_right_charge_eta = DimuDstar_acc['Dstar']['eta'].value[dstar_rgt_chg_cuts]
+            dstar_asso_right_charge_phi = DimuDstar_acc['Dstar']['phi'].value[dstar_rgt_chg_cuts]
 
-            dstar_asso_wrong_charge_pt = DimuDstar_acc['Dstar']['pt'].value[is_jpsi & wrg_chg]
-            dstar_asso_wrong_charge_eta = DimuDstar_acc['Dstar']['eta'].value[is_jpsi & wrg_chg]
-            dstar_asso_wrong_charge_phi = DimuDstar_acc['Dstar']['phi'].value[is_jpsi & wrg_chg]
+            dstar_asso_wrong_charge_pt = DimuDstar_acc['Dstar']['pt'].value[dstar_wrg_chg_cuts]
+            dstar_asso_wrong_charge_eta = DimuDstar_acc['Dstar']['eta'].value[dstar_wrg_chg_cuts]
+            dstar_asso_wrong_charge_phi = DimuDstar_acc['Dstar']['phi'].value[dstar_wrg_chg_cuts]
 
-            dstar_asso_right_charge_rap = DimuDstar_acc['Dstar']['rap'].value[is_jpsi & ~wrg_chg]
-            dstar_asso_wrong_charge_rap = DimuDstar_acc['Dstar']['rap'].value[is_jpsi & wrg_chg]
+            dstar_asso_right_charge_rap = DimuDstar_acc['Dstar']['rap'].value[dstar_rgt_chg_cuts]
+            dstar_asso_wrong_charge_rap = DimuDstar_acc['Dstar']['rap'].value[dstar_wrg_chg_cuts]
 
             # Associated object
             dimuon_dstar_deltarap = DimuDstar_acc['deltarap'].value[is_jpsi & ~wrg_chg & dlSig & dlSig_D0Dstar]
@@ -529,7 +552,7 @@ class HistogramingProcessor(processor.ProcessorABC):
 
         # Primary vertex
         #print(Primary_vertex_acc)
-        output['PV_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
+        #output['PV_npvs'].fill(npvs=Primary_vertex_acc['npvs'].value)
         
         
         ##Muon

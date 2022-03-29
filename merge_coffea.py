@@ -11,6 +11,7 @@ parser.add_argument("-p", "--hist", help="Merge the hist files", action="store_t
 args = parser.parse_args()
 
 # Function to create a list with all coffea files in a path
+
 path = 'output/Charmonium_2017_Nano_Coffea/'
 name = 'Charmonium_2017'
 
@@ -28,8 +29,10 @@ def merg_files(path, name):
     files = []
     with os.scandir(path) as aux:
         for file in aux:
-            if file.name.endswith(typ) and (file.stat().st_size != 0):
-                files.append(file.path)
+            if file.name.startswith('Run'):
+                for i in os.scandir(file.path):
+                    if i.name.endswith(typ) and (i.stat().st_size != 0):
+                        files.append(i.path)
     # Takes the first to start the accumulator
     acc = load(files[0])
     # Take the length of the list
@@ -42,12 +45,12 @@ def merg_files(path, name):
     # For accumulate the files
     if args.data:
         #print("First half")
-        for i in tqdm(range(1179, 1570), desc="Processing", unit="files"):
+        for i in tqdm(range(0, le_files), desc="Processing", unit="files"):
             acc += load(files[i])
         save(acc, sv + '_' + name + '.coffea')
         
     if args.hist:
-        for i in tqdm(range(1, le_files), desc="Processing", unit="files"):
+        for i in tqdm(range(0, le_files), desc="Processing", unit="files"):
             acc += load(files[i])
         save(acc, sv + '_' + name + '.coffea')
 

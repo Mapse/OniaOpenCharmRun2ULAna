@@ -101,19 +101,33 @@ class EventSelectorProcessor(processor.ProcessorABC):
         hlt = False
         # HLT to be used
         hlt_filter = 'HLT_Dimuon20_Jpsi_Barrel_Seagulls'
+        hlt_filter = ['HLT_Dimuon0_Jpsi', 'HLT_Dimuon20_Jpsi_Barrel_Seagulls' , 'HLT_Dimuon25_Jpsi']
         
         # Trigger choice
         if hlt:
-            print(f"You are running with the trigger: {hlt_filter}")
-            trigger_cut = hlt_char_2017[hlt_filter]
-            hlt_char_2017 = hlt_char_2017[trigger_cut]
+            #print(f"You are running with the trigger: {hlt_filter}")
+
+            trigger_cut1 = hlt_char_2017[hlt_filter[0]]
+            trigger_cut2 = hlt_char_2017[hlt_filter[1]]
+            trigger_cut3 = hlt_char_2017[hlt_filter[2]]
+
+            Dimu = Dimu[(trigger_cut1) | (trigger_cut2) | (trigger_cut3)]
+            Muon = Muon[(trigger_cut1) | (trigger_cut2) | (trigger_cut3)]
+            Dstar = Dstar[(trigger_cut1) | (trigger_cut2) | (trigger_cut3)]
+            hlt_char_2017 = hlt_char_2017[(trigger_cut1) | (trigger_cut2) | (trigger_cut3)]
+        
         if not hlt:
-            print("You are not running with trigger")
+            #print("You are not running with trigger")
             # Assign 1 to all events.
             trigger_cut = np.ones(len(Dimu), dtype=bool)
 
+            Dimu = Dimu[trigger_cut]
+            Muon = Muon[trigger_cut]
+            Dstar = Dstar[trigger_cut]
+            #hlt_char_2017 = hlt_char_2017[trigger_cut]
+
         ############### Dimu cuts charge = 0, mass cuts and chi2...
-        Dimu = Dimu[trigger_cut]
+        #Dimu = Dimu[trigger_cut]
         Dimu = Dimu[Dimu.charge == 0]
         output['cutflow']['Dimu 0 charge'] += ak.sum(ak.num(Dimu))
 
@@ -131,7 +145,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         #Dimu = Dimu[dimuon_pointing_cut]
 
         ############### Get the Muons from Dimu, for cuts in their params
-        Muon = Muon[trigger_cut]
+        #Muon = Muon[trigger_cut]
         Muon = ak.zip({'0': Muon[Dimu.t1muIdx], '1': Muon[Dimu.t2muIdx]})
 
         # SoftId and Global Muon cuts
@@ -164,7 +178,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Dimu['is_psi'] = (Dimu.mass > 3.35) & (Dimu.mass < 4.05)
 
         ############### Cuts for D0
-        D0 = D0[trigger_cut]
+        #D0 = D0[trigger_cut]
         D0 = D0[~D0.hasMuon]
         D0noncut = D0
         output['cutflow']['D0 trk muon cut'] += ak.sum(ak.num(D0))
@@ -198,7 +212,7 @@ class EventSelectorProcessor(processor.ProcessorABC):
         ############### Cuts for Dstar
 
         # trks cuts
-        Dstar = Dstar[trigger_cut]
+        #Dstar = Dstar[trigger_cut]
         Dstar = Dstar[~Dstar.hasMuon]
         output['cutflow']['Dstar trk muon cut'] += ak.sum(ak.num(Dstar))
 
@@ -237,7 +251,9 @@ class EventSelectorProcessor(processor.ProcessorABC):
         Dstar = Dstar[Dstar.D0pt > 3]
         output['cutflow']['Dstar D0 pt cut'] += ak.sum(ak.num(Dstar))
 
-        Dstar = Dstar[Dstar.D0dlSig > 3]
+        D0dlsigcut = 3.0
+        Dstar = Dstar[Dstar.D0dlSig > D0dlsigcut]
+        print(f'cut: {D0dlsigcut}')
         output['cutflow']['Dstar D0 dlSig cut'] += ak.sum(ak.num(Dstar))
 
         Dstar['wrg_chg'] = (Dstar.Kchg == Dstar.pichg)
@@ -352,8 +368,10 @@ class EventSelectorProcessor(processor.ProcessorABC):
 
         # return dummy accumulator
         return processor.dict_accumulator({
-                'cutflow': output['cutflow']
+                'cutflow': output['cutflow'],
+                #'cut_studied': output['cut_studied']
         })
+        
 
     def postprocess(self, accumulator):
         return accumulator
