@@ -24,21 +24,12 @@ and compute the number of candidates for signal and background.
 
 """
 
-def fit2DJpsiDstar():
+def fit2DJpsiDstar(opt):
 
     # Root file with data
-    if (args.testfit): 
+    '''if (args.testfit): 
         file = ROOT.TFile.Open(config.dict_fls["save_path_single_file"])
-        rootdata = file.asso
-
-    if (args.severaldata):
-        chain = ROOT.TChain("JpsiDstar")
-        for i in tqdm(config.dict_fls["eras"], desc="Loading", unit="eras", total=len(config.dict_fls["eras"])):
-         
-            dtset = config.dict_fls["dataset"] + i
-            save_path = config.dict_fls["save_path"]
-            chain.Add(save_path + dtset + "_JpsiDstar.root")
-        rootdata = chain
+        rootdata = file.asso'''
 
     ### Fitting part
 
@@ -47,28 +38,39 @@ def fit2DJpsiDstar():
     # Dstar mass parameter
     dstar_mass = ROOT.RooRealVar("dstar_mass", "Dstar Delta m ", 0.14, 0.16)
 
-    # Take the data from the file
-    data = ROOT.RooDataSet("data", 
-                       "Data 2D Jpsi + Dstar", 
-                       ROOT.RooArgSet(jpsi_mass, dstar_mass), 
-                       ROOT.RooFit.Import(rootdata))
+    # Root file with data
+
+    # Opens each root file
+    
+    root_file = ROOT.TFile.Open(opt[1]['files'][6])
+
+    # Opens the corresponding ntuple
+    rootdata = root_file.asso
+
+    # Takes the data from the file
+    data = ROOT.RooDataSet("data", "Data 2D Jpsi + Dstar",
+                        ROOT.RooArgSet(jpsi_mass, dstar_mass),
+                        ROOT.RooFit.Import(rootdata))
+
+
+
     # Individual data for jpsi and dstar
     #datajpsi = ROOT.RooDataSet("data", "Data 2D Jpsi + Dstar", file.asso, ROOT.RooArgSet(jpsi_mass))
     #datadstar = ROOT.RooDataSet("data", "Data 2D Jpsi + Dstar", file.asso, ROOT.RooArgSet(dstar_mass))
 
     ## Jpsi Signal: Crystal Ball and Gaussian with same mean
-
+    
     # Mean
-    mean_jpsi = ROOT.RooRealVar("mean_jpsi", "", 3.09355, 3.05, 3.15)
+    mean_jpsi = ROOT.RooRealVar("mean_jpsi", "", opt[0]['fit_parameters']['mean_jpsi'][0], opt[0]['fit_parameters']['mean_jpsi'][1], opt[0]['fit_parameters']['mean_jpsi'][2])
     # Sigmas
-    sigma_gauss = ROOT.RooRealVar("sigma_gauss", "", 0.04, 0.000001, 1)
-    sigma_cb = ROOT.RooRealVar("sigma_cb", "", 0.02, 0.000001, 1)
+    sigma_gauss = ROOT.RooRealVar("sigma_gauss", "", opt[0]['fit_parameters']['sigma_gauss'][0], opt[0]['fit_parameters']['sigma_gauss'][1], opt[0]['fit_parameters']['sigma_gauss'][2])
+    sigma_cb = ROOT.RooRealVar("sigma_cb", "", opt[0]['fit_parameters']['sigma_cb'][0], opt[0]['fit_parameters']['sigma_cb'][1], opt[0]['fit_parameters']['sigma_cb'][2])
     # PDFs fractions
-    frac_gauss_jpsi = ROOT.RooRealVar("frac_gauss_jpsi","", 0.4, 0.0, 1.0)
-    frac_cb = ROOT.RooRealVar("frac_cb","", 0.6, 0.0, 1.0)
+    frac_gauss_jpsi = ROOT.RooRealVar("frac_gauss_jpsi","", opt[0]['fit_parameters']['frac_gauss_jpsi'][0], opt[0]['fit_parameters']['frac_gauss_jpsi'][1], opt[0]['fit_parameters']['frac_gauss_jpsi'][2])
+    frac_cb = ROOT.RooRealVar("frac_cb","", opt[0]['fit_parameters']['frac_cb'][0], opt[0]['fit_parameters']['frac_cb'][1], opt[0]['fit_parameters']['frac_cb'][2])
     # Alpha and n for Crystal Ball
-    alpha = ROOT.RooRealVar("alpha", "", 1.2)
-    n = ROOT.RooRealVar("n", "", 8.8)
+    alpha = ROOT.RooRealVar("alpha", "", opt[0]['fit_parameters']['alpha'])
+    n = ROOT.RooRealVar("n", "", opt[0]['fit_parameters']['n'])
     # Signal definition
     gauss = ROOT.RooGaussian("gauss", "", jpsi_mass, mean_jpsi, sigma_gauss)
     crystal_ball = ROOT.RooCBShape("crystal_ball", "", jpsi_mass, mean_jpsi, sigma_cb, alpha, n)
@@ -79,26 +81,29 @@ def fit2DJpsiDstar():
     ## Jpsi Background: Exponential
 
     # Exponential coefficient
-    exp_coef = ROOT.RooRealVar("exp_coef", "", -3.2, -5, 5)
+    exp_coef = ROOT.RooRealVar("exp_coef", "", opt[0]['fit_parameters']['exp_coef'][0], opt[0]['fit_parameters']['exp_coef'][1], opt[0]['fit_parameters']['exp_coef'][2])
     # Background definition
     back_exp = ROOT.RooExponential("back_exp", "", jpsi_mass, exp_coef)
     # Background fraction
-    frac_exp = ROOT.RooRealVar("frac_exp", "", 0.4, 0.0, 1.0)
+    frac_exp = ROOT.RooRealVar("frac_exp", "", opt[0]['fit_parameters']['frac_exp'][0], opt[0]['fit_parameters']['frac_exp'][1], opt[0]['fit_parameters']['frac_exp'][2])
 
     # Jpsi model definition 
     jpsi_model = ROOT.RooAddPdf("jpsi_model", "", ROOT.RooArgList(gauss, crystal_ball, back_exp),
-                   ROOT.RooArgList(frac_gauss_jpsi, frac_cb))
+                ROOT.RooArgList(frac_gauss_jpsi, frac_cb))
 
     ## Dstar Signal: Double Gaussian with same mean
 
     # Mean
-    dstar_mean = ROOT.RooRealVar("dstar_mean", "Dstar Gaussian Mean", 0.1455, 0.142, 0.158)
+    dstar_mean = ROOT.RooRealVar("dstar_mean", "Dstar Gaussian Mean", opt[0]['fit_parameters']['dstar_mean'][0], opt[0]['fit_parameters']['dstar_mean'][1], opt[0]['fit_parameters']['dstar_mean'][2])
+    #dstar_mean.setConstant(True)
     # Sigmas
-    dstar_sigma1 = ROOT.RooRealVar("dstar_sigma_1", "Dstar Gaussian 1 Sigma", 0.005, 0.0001, 0.01)
-    dstar_sigma2 = ROOT.RooRealVar("dstar_sigma_2", "Dstar Gaussian 2 Sigma", 0.001, 0.0001, 0.01)
+    dstar_sigma1 = ROOT.RooRealVar("dstar_sigma_1", "Dstar Gaussian 1 Sigma", opt[0]['fit_parameters']['dstar_sigma_1'][0], opt[0]['fit_parameters']['dstar_sigma_1'][1], opt[0]['fit_parameters']['dstar_sigma_1'][2])
+    dstar_sigma2 = ROOT.RooRealVar("dstar_sigma_2", "Dstar Gaussian 2 Sigma", opt[0]['fit_parameters']['dstar_sigma_2'][0], opt[0]['fit_parameters']['dstar_sigma_2'][1], opt[0]['fit_parameters']['dstar_sigma_2'][2])
+    #dstar_sigma1.setConstant(True)
+    #dstar_sigma2.setConstant(True)
     # PDFs fractions
-    gauss1_frac = ROOT.RooRealVar("gauss1_frac", "Dstar Gaussian Fraction", 0.3, 0, 1)
-    gauss2_frac = ROOT.RooRealVar("gauss2_frac", "Dstar Signal Fraction", 0.3, 0, 1)
+    gauss1_frac = ROOT.RooRealVar("gauss1_frac", "Dstar Gaussian Fraction", opt[0]['fit_parameters']['gauss1_frac'][0], opt[0]['fit_parameters']['gauss1_frac'][1], opt[0]['fit_parameters']['gauss1_frac'][2])
+    gauss2_frac = ROOT.RooRealVar("gauss2_frac", "Dstar Signal Fraction", opt[0]['fit_parameters']['gauss2_frac'][0], opt[0]['fit_parameters']['gauss2_frac'][1], opt[0]['fit_parameters']['gauss2_frac'][2])
     # Signal definition
     g1 = ROOT.RooGaussian("gauss1", "Dstar Gaussian 1", dstar_mass, dstar_mean, dstar_sigma1)
     g2 = ROOT.RooGaussian("gauss2", "Dstar Gaussian 2", dstar_mass, dstar_mean, dstar_sigma2)
@@ -109,18 +114,20 @@ def fit2DJpsiDstar():
     ## Dstar Background: Phenomenological Threshold Function 
 
     # Coefficients
-    p0 = ROOT.RooRealVar("p0","", 0.005, -1, 1)
-    p1 = ROOT.RooRealVar('p1',"", 5, 0, 10)
-    p2 = ROOT.RooRealVar('p2',"", 0.12, 1, 20)
-
+    p0 = ROOT.RooRealVar("p0","", opt[0]['fit_parameters']['p0'][0], opt[0]['fit_parameters']['p0'][1], opt[0]['fit_parameters']['p0'][2])
+    #p0.setConstant(True)
+    p1 = ROOT.RooRealVar('p1',"", opt[0]['fit_parameters']['p1'][0], opt[0]['fit_parameters']['p1'][1], opt[0]['fit_parameters']['p1'][2])
+    #p1.setConstant(True)
+    p2 = ROOT.RooRealVar('p2',"", opt[0]['fit_parameters']['p2'][0], opt[0]['fit_parameters']['p2'][1], opt[0]['fit_parameters']['p2'][2])
+    #p2.setConstant(True)
     # Background definition
     dstar_bkg = ROOT.RooGenericPdf("dstar_bkg","Dstar Background PDF","(1 - exp(-(@0 -0.13957)/@1)) * (@0/0.13957)**@2 + @3 * (@0/0.13957 - 1)",
-                         ROOT.RooArgList(dstar_mass,p0,p1,p2))
+                        ROOT.RooArgList(dstar_mass,p0,p1,p2))
     # Background fraction
     #frac_thr = ROOT.RooRealVar("frac_thr", "", 0.4, 0.0, 1.0)
     # Dstar model definition
     dstar_model = ROOT.RooAddPdf("dstar_model", "Dstar Model", ROOT.RooArgList(g1, g2, dstar_bkg),
-                       ROOT.RooArgList(gauss1_frac, gauss2_frac), ROOT.kTRUE)
+                    ROOT.RooArgList(gauss1_frac, gauss2_frac), ROOT.kTRUE)
     # 2D model definition
     model2D = ROOT.RooProdPdf("model2D", "2D Model Upsilon + Dstar", ROOT.RooArgList(jpsi_model, dstar_model))
     # Fitting
@@ -131,7 +138,7 @@ def fit2DJpsiDstar():
     ## Canvas definitions 
 
     # Canvas for Jpsi 
-    #c1 = ROOT.TCanvas("c1")
+    c1 = ROOT.TCanvas("c1")
     
     # Fame for Jpsi
     frame_jpsi = jpsi_mass.frame(ROOT.RooFit.Title("Dimuon Invariant mass"))
@@ -142,15 +149,15 @@ def fit2DJpsiDstar():
 
     # Plot the Jpsi signal
     jpsi_model.plotOn(frame_jpsi, ROOT.RooFit.Name("Signal"), ROOT.RooFit.Components("gauss,crystal_ball"),
-                   ROOT.RooFit.LineStyle(config.styles["signal"]), ROOT.RooFit.LineColor(config.colors["signal"]))
+                ROOT.RooFit.LineStyle(config.styles["signal"]), ROOT.RooFit.LineColor(config.colors["signal"]))
     
     # Plot for Jpsi background
     jpsi_model.plotOn(frame_jpsi, ROOT.RooFit.Name("Background"), ROOT.RooFit.Components("back_exp"),
-                   ROOT.RooFit.LineStyle(config.styles["background"]), ROOT.RooFit.LineColor(config.colors["background"]))
+                ROOT.RooFit.LineStyle(config.styles["background"]), ROOT.RooFit.LineColor(config.colors["background"]))
 
     # Plot for the Model
     jpsi_model.plotOn(frame_jpsi, ROOT.RooFit.Name("Model"), ROOT.RooFit.LineStyle(config.styles["model"]),
-                   ROOT.RooFit.LineColor(config.colors["model"]))
+                ROOT.RooFit.LineColor(config.colors["model"]))
 
     leg_jpsi = ROOT.TLegend(0.7, 0.7, 0.88, 0.89)
     leg_jpsi.AddEntry(frame_jpsi.findObject("Data"), "Data", "LEP")
@@ -158,11 +165,11 @@ def fit2DJpsiDstar():
     leg_jpsi.AddEntry(frame_jpsi.findObject("Signal"), "Signal Fit", "L")
     leg_jpsi.AddEntry(frame_jpsi.findObject("Background"), "Background fit", "L")
 
-    """ frame_jpsi.Draw()
+    frame_jpsi.Draw()
     leg_jpsi.Draw("same")
     c1.Draw()
-    c1.SaveAs(config.dict_fls["save_fit_jpsi"]) """
-      
+    c1.SaveAs(opt[1]['files'][4])
+    
     # Canvas for Dstar 
     c2 = ROOT.TCanvas("Dstar Canvas")
 
@@ -209,7 +216,7 @@ def fit2DJpsiDstar():
     right.SetTextSize(20)
     right.DrawLatex(.80,.94 , config.lumi)
 
-    c2.SaveAs(config.dict_fls["save_fit_dstar"])
+    c2.SaveAs(opt[1]['files'][3])
 
     """ # Mass correlation
     c3 = ROOT.TCanvas("Mass correlation")
@@ -217,7 +224,7 @@ def fit2DJpsiDstar():
     model2D.fillHistogram(ph2,ROOT.RooArgList(dstar_mass,jpsi_mass))
     ph2.Draw("SURF")
     c3.Draw()
-    c3.SaveAs(config.dict_fls["save_correlation_JpsiDstar"])
+    c3.SaveAs(opt[1]['files'][5])
 
     # 2D fitting
     c4 = ROOT.TCanvas("2D fitting")
@@ -226,7 +233,7 @@ def fit2DJpsiDstar():
     dh2.Rebin2D(3,3)
     dh2.Draw("LEGO")
     c4.Draw()
-    c4.SaveAs(config.dict_fls["save_fit_2d"]) """
+    c4.SaveAs(opt[1]['files'][2]) """
 
     #### Not being used ###
     """ # Chi square
@@ -247,15 +254,15 @@ def fit2DJpsiDstar():
     print("Xi square for Dstar is: {}".format(frame_dstar.chiSquare(8))) """
     ###########################################################
     # To save workspace
-    wspace = ROOT.RooWorkspace(config.dict_fls["wspace_name"])
+    wspace = ROOT.RooWorkspace(opt[1]['files'][0])
     
     getattr(wspace, "import")(data)
     getattr(wspace, "import")(model2D)
     getattr(wspace, "import")(result)
 
-    wspace.writeToFile(config.dict_fls["wspace_root"])
+    wspace.writeToFile(opt[1]['files'][1])
 
-def yields_jpsidstar(file=config.dict_fls["wspace_root"]):
+'''def yields_jpsidstar(file=config.cases['Charmonium_2017_D0Dstar_dlSig3p0'][1]['files'][1]):
     
     file_root = ROOT.TFile(file)
     wspace = file_root.Get(config.dict_fls["wspace_name"])
@@ -336,10 +343,14 @@ Nevt signal = {Nevts*(fcp4)}
 Nevt bg = {Nevts*(fcp1 + fcp2 + fcp3)}
 """
 
-    print(msg)
+    print(msg)'''
 
 if (args.fit):
-    fit2DJpsiDstar()
+    import time
+    tstart = time.time()
+    for opt in config.cases.values():
+        fit2DJpsiDstar(opt)
+    print(f'Process finished in: {time.time()-tstart:.2f} s')
 
 if (args.yields):
     yields_jpsidstar()
