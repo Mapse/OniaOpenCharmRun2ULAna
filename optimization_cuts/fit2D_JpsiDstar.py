@@ -1,7 +1,12 @@
+from cmath import sqrt
+from webbrowser import BackgroundBrowser
 import ROOT
 import math
 import argparse
 from tqdm import tqdm
+
+from uncertainties import ufloat
+from uncertainties.umath import * 
 
 import config_fit_2d as config
 
@@ -218,13 +223,13 @@ def fit2DJpsiDstar(opt):
 
     c2.SaveAs(opt[1]['files'][3])
 
-    """ # Mass correlation
+    # Mass correlation
     c3 = ROOT.TCanvas("Mass correlation")
     ph2 = dstar_mass.createHistogram("dstar vs jpsi pdf", jpsi_mass)
     model2D.fillHistogram(ph2,ROOT.RooArgList(dstar_mass,jpsi_mass))
     ph2.Draw("SURF")
     c3.Draw()
-    c3.SaveAs(opt[1]['files'][5])
+    c3.SaveAs(opt[1]['files'][2])
 
     # 2D fitting
     c4 = ROOT.TCanvas("2D fitting")
@@ -233,117 +238,212 @@ def fit2DJpsiDstar(opt):
     dh2.Rebin2D(3,3)
     dh2.Draw("LEGO")
     c4.Draw()
-    c4.SaveAs(opt[1]['files'][2]) """
+    c4.SaveAs(opt[1]['files'][5]) 
 
     #### Not being used ###
-    """ # Chi square
+    # Chi square
     print("-----------------------Xi square-----------------------")
 
-    # Jpsi
+    """ # Jpsi
     print("Jpsi:")
     n_param = result.floatParsFinal().getSize()
-    reduce_chi_square_jpsi = frame_jpsi.chiSquare(n_param)
-    print("Xi square for J/psi is (I don't know): {}".format(reduce_chi_square_jpsi))
-    print("Xi square for J/psi is: {}".format(frame_jpsi.chiSquare(6)))
-    print(n_param)
+    reduce_chi_square_jpsi_notSure = frame_jpsi.chiSquare(n_param)
+    print(f"Xi square for J/psi is (I don't know): {reduce_chi_square_jpsi_notSure}") """
 
-    # Dstar
+    """ # Dstar
     print("Dstar:")
-    reduce_chi_square_dstar = frame_dstar.chiSquare(n_param)
-    print("Xi square for Dstar is (I don't know): {}".format(reduce_chi_square_dstar))
-    print("Xi square for Dstar is: {}".format(frame_dstar.chiSquare(8))) """
+    reduce_chi_square_dstar_notSure = frame_dstar.chiSquare(n_param)
+    print(f"Xi square for Dstar is (I don't know): {reduce_chi_square_dstar_notSure}") """
+    
+   
     ###########################################################
     # To save workspace
     wspace = ROOT.RooWorkspace(opt[1]['files'][0])
     
     getattr(wspace, "import")(data)
     getattr(wspace, "import")(model2D)
-    getattr(wspace, "import")(result)
 
     wspace.writeToFile(opt[1]['files'][1])
 
-'''def yields_jpsidstar(file=config.cases['Charmonium_2017_D0Dstar_dlSig3p0'][1]['files'][1]):
+    # Jpsi chi square  
+    chi_square_jpsi = frame_jpsi.chiSquare(config.nparm_jpsi)
+    print(f"Xi square for J/psi is: {chi_square_jpsi}")
+    # Dstar chi square
+    chi_square_dstar = frame_dstar.chiSquare(config.nparm_dstar)
+    print(f"Xi square for Dstar is: {chi_square_dstar}")
     
-    file_root = ROOT.TFile(file)
-    wspace = file_root.Get(config.dict_fls["wspace_name"])
+    with open(opt[1]['files'][1].replace('.root', '') + '.txt', 'w') as f:
+        f.write(str(chi_square_jpsi))
+        f.write('\n')
+        f.write(str(chi_square_dstar))
 
-    model2D = wspace.pdf("model2D")
+
+def yields_jpsidstar(yield_list=config.yield_files):
+
+    import csv
+    import numpy as np
     
-    components = model2D.getComponents()
+    with open(config.csv_name, 'w') as c:
+        # Creates the csv writer
+        writer = csv.writer(c)
+        # write a row to the csv file
+        header = ['Case', 'N_evts_total', 'Nevt_Jpsi', 'Nevt_Jpsi_error', 'Nevt_Dstar', 'Nevt_Dstar_error', 'N_signal', 
+                  'N_signal_err', 'N_background', 'N_background_err', 'chi_square_jpsi', 'chi_square_dstar' , 'FOM', 'FOM_err']
+        writer.writerow(header)
 
-    jpsi_mass = wspace.var("jpsi_mass")
-    dstar_mass = wspace.var("dstar_mass")
+        for f in yield_list:
 
-    # Jpsi
-    gauss = components.find("gauss")
-    crystal_ball = components.find("crystal_ball")
-    exponential = components.find("back_exp")
+            with open(f.replace('_wspace', '') + '_2Dfit.txt', 'r') as tx:
+                list_chi = tx.readlines()
+                chi_square_jpsi = float(list_chi[0])
+                chi_square_dstar = float(list_chi[1])
+               
+            file_root = ROOT.TFile(f.replace('_wspace', '') + '_2Dfit.root')
+            print()
+            wspace = file_root.Get(f.replace('fit_root_files/', ''))
 
-    """ gauss_integral = gauss.createIntegral(ROOT.RooArgSet(jpsi_mass, dstar_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(jpsi_mass, dstar_mass)))
-    crystal_ball_integral = crystal_ball.createIntegral(ROOT.RooArgSet(jpsi_mass, dstar_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(jpsi_mass, dstar_mass)))
-    exponential_integral = exponential.createIntegral(ROOT.RooArgSet(jpsi_mass, dstar_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(jpsi_mass, dstar_mass))) """
+            print(wspace.var(""))
 
-    # Dstar
-    gauss1 = components.find("gauss1")
-    gauss2 = components.find("gauss2")
-    dstar_bkg = components.find("dstar_bkg")
+            model2D = wspace.pdf("model2D")
+            
+            components = model2D.getComponents()
+            
+            jpsi_mass = wspace.var("jpsi_mass")
+            
+            dstar_mass = wspace.var("dstar_mass")
 
-    
-    """ gauss1_integral = gauss1.createIntegral(ROOT.RooArgSet(dstar_mass, jpsi_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(dstar_mass, jpsi_mass)))
-    gauss2_integral = gauss2.createIntegral(ROOT.RooArgSet(dstar_mass, jpsi_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(dstar_mass, jpsi_mass)))
-    dstar_bkg_integral = dstar_bkg.createIntegral(ROOT.RooArgSet(dstar_mass, jpsi_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(dstar_mass, jpsi_mass)))
+            # Jpsi
+            gauss = components.find("gauss")
+            crystal_ball = components.find("crystal_ball")
+            exponential = components.find("back_exp")
 
-    print("Jpsi")
-    gauss_integral.Print()
-    crystal_ball_integral.Print()
-    exponential_integral.Print()
+            """ gauss_integral = gauss.createIntegral(ROOT.RooArgSet(jpsi_mass, dstar_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(jpsi_mass, dstar_mass)))
+            crystal_ball_integral = crystal_ball.createIntegral(ROOT.RooArgSet(jpsi_mass, dstar_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(jpsi_mass, dstar_mass)))
+            exponential_integral = exponential.createIntegral(ROOT.RooArgSet(jpsi_mass, dstar_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(jpsi_mass, dstar_mass))) """
 
-    print("Dstar")
-    gauss1_integral.Print()
-    gauss2_integral.Print()
-    dstar_bkg_integral.Print() """
+            # Dstar
+            gauss1 = components.find("gauss1")
+            gauss2 = components.find("gauss2")
+            dstar_bkg = components.find("dstar_bkg")
 
-    """ print("2D")
-    model2D_integral = model2D.createIntegral(ROOT.RooArgSet(dstar_mass, jpsi_mass),
-                                              ROOT.RooFit.NormSet(ROOT.RooArgSet(dstar_mass, jpsi_mass)))
-    model2D_integral.Print()  """
+            
+            """ gauss1_integral = gauss1.createIntegral(ROOT.RooArgSet(dstar_mass, jpsi_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(dstar_mass, jpsi_mass)))
+            gauss2_integral = gauss2.createIntegral(ROOT.RooArgSet(dstar_mass, jpsi_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(dstar_mass, jpsi_mass)))
+            dstar_bkg_integral = dstar_bkg.createIntegral(ROOT.RooArgSet(dstar_mass, jpsi_mass), ROOT.RooFit.NormSet(ROOT.RooArgSet(dstar_mass, jpsi_mass)))
 
-    print("Params")
-    params = model2D.getVariables()
-    data = wspace.data("data")
+            print("Jpsi")
+            gauss_integral.Print()
+            crystal_ball_integral.Print()
+            exponential_integral.Print()
 
-    # N events
-    Nevts = data.sumEntries()
+            print("Dstar")
+            gauss1_integral.Print()
+            gauss2_integral.Print()
+            dstar_bkg_integral.Print() """
 
-    # Fracs jpsi
-    frac_gauss_jpsi = params.find("frac_gauss_jpsi")
-    frac_cb = params.find("frac_cb")
+            """ print("2D")
+            model2D_integral = model2D.createIntegral(ROOT.RooArgSet(dstar_mass, jpsi_mass),
+                                                    ROOT.RooFit.NormSet(ROOT.RooArgSet(dstar_mass, jpsi_mass)))
+            model2D_integral.Print()  """
 
-    # Fracs dstar
-    gauss1_frac = params.find("gauss1_frac")
-    gauss2_frac = params.find("gauss2_frac")
+            print("Params")
+            params = model2D.getVariables()
+            data = wspace.data("data")
 
-    ## Contassssssss
-    fjpsi = (frac_gauss_jpsi.getVal() + frac_cb.getVal() * (1 - frac_gauss_jpsi.getVal()))
-    fbgjpsi = 1 - fjpsi
-    fdstar = (gauss1_frac.getVal() + gauss2_frac.getVal() * (1 - gauss1_frac.getVal()))
-    fbgstar = 1 - fdstar
+            # N events
+            Nevts = data.sumEntries()
 
-    fcp1 = fbgjpsi * fbgstar
-    fcp2 = fbgjpsi * fdstar
-    fcp3 = fjpsi * fbgstar
-    fcp4 = fjpsi * fdstar
-    fcptotal = fcp1 + fcp2 + fcp3 + fcp4
+            ## Fractions jpsi
 
-    msg = f"""Summary:
-Nevt total = {Nevts}
-Nevt jpsi = {Nevts*(fcp3+fcp4)}
-Nevt dstar = {Nevts*(fcp2+fcp4)}
-Nevt signal = {Nevts*(fcp4)}
-Nevt bg = {Nevts*(fcp1 + fcp2 + fcp3)}
-"""
+            # Frac. gaussian
+            frac_gauss_jpsi = params.find("frac_gauss_jpsi")
+            frac_gauss_jpsi_val = frac_gauss_jpsi.getVal()
+            frac_gauss_jpsi_error = frac_gauss_jpsi.getError()
 
-    print(msg)'''
+            # Frac. CB
+            frac_cb = params.find("frac_cb")
+            frac_cb_val = frac_cb.getVal()
+            frac_cb_error = frac_cb.getError()
+            #print(frac_gauss_jpsi.getError())
+
+            ## Fractions dstar
+
+            # Frac. gauss 1
+            gauss1_frac = params.find("gauss1_frac")
+            gauss1_frac_val = gauss1_frac.getVal()
+            gauss1_frac_error = gauss1_frac.getError()
+
+            # Frac. gauss 2
+            gauss2_frac = params.find("gauss2_frac")
+            gauss2_frac_val = gauss2_frac.getVal()
+            gauss2_frac_error = gauss2_frac.getError()
+
+            ## Contassssssss
+            fjpsi_val = (frac_gauss_jpsi_val + frac_cb_val * (1 - frac_gauss_jpsi_val))
+            fjpsi_error = (frac_gauss_jpsi_error + frac_cb_error * (1 - frac_gauss_jpsi_error))
+
+            fbgjpsi_val = 1 - fjpsi_val
+            fbgjpsi_error = 1 - fjpsi_error
+
+            fdstar_val = (gauss1_frac_val + gauss2_frac_val * (1 - gauss1_frac_val))
+            fdstar_error = (gauss1_frac_error + gauss2_frac_error * (1 - gauss1_frac_error))
+
+            fbgstar_val = 1 - fdstar_val
+            fbgstar_error = 1 - fdstar_error
+
+            fcp1_val = fbgjpsi_val * fbgstar_val
+            fcp2_val = fbgjpsi_val * fdstar_val
+            fcp3_val = fjpsi_val * fbgstar_val
+            fcp4_val = fjpsi_val * fdstar_val
+            fcptotal_val = fcp1_val + fcp2_val + fcp3_val + fcp4_val
+
+            fcp1_error = fbgjpsi_error * fbgstar_error
+            fcp2_error = fbgjpsi_error * fdstar_error
+            fcp3_error = fjpsi_error * fbgstar_error
+            fcp4_error = fjpsi_error * fdstar_error
+            fcptotal_error = fcp1_error + fcp2_error + fcp3_error + fcp4_error
+
+            signal_val = Nevts*(fcp4_val)
+            signal_error = Nevts*(fcp4_error)
+
+            background_val = Nevts*(fcp1_val + fcp2_val + fcp3_val)
+            background_error = Nevts*(fcp1_error + fcp2_error + fcp3_error)
+
+            """ OLD APPROACH
+            fom_val = signal_val/(signal_val + background_val)**0.5
+            fom_error = np.abs(fom_val) * ((signal_error/signal_val)**2 + (background_error/(2*background_val))**2)**0.5 """
+
+            # Used uncertaities to compute fom and error
+            x = ufloat(signal_val, signal_error)
+            y = ufloat(background_val, background_error)
+            fom = x/(x + y)**0.5
+            fom_val = fom.nominal_value
+            fom_error = fom.std_dev
+            
+
+            nevts_jpsi_val = (Nevts*(fcp3_val+fcp4_val))
+            nevts_jpsi_error = (Nevts*(fcp3_error+fcp4_error))
+
+            nevts_dstar_val = (Nevts*(fcp2_val+fcp4_val))
+            nevts_dstar_error = (Nevts*(fcp2_error+fcp4_error))
+
+            row = [f, Nevts, nevts_jpsi_val, nevts_jpsi_error, nevts_dstar_val, nevts_dstar_error, signal_val, signal_error, 
+                   background_val, background_error, chi_square_jpsi, chi_square_dstar, fom_val, fom_error]
+            writer.writerow(row)
+
+            
+
+            msg = f"""Summary:
+        Nevt total = {Nevts:.2f} 
+        Nevt jpsi = {nevts_jpsi_val:.2f} +- {nevts_jpsi_error:.2f}
+        Nevt dstar = {nevts_dstar_val:.2f} +- {nevts_dstar_error:.2f}
+        Nevt signal = {(Nevts*(fcp4_val)):.2f} +- {(Nevts*(fcp4_error)):.2f}
+        Nevt bg = {(background_val):.2f} +- {(background_error):.2f} 
+        """
+
+            print(msg)
+
+    return params
 
 if (args.fit):
     import time
@@ -353,4 +453,5 @@ if (args.fit):
     print(f'Process finished in: {time.time()-tstart:.2f} s')
 
 if (args.yields):
-    yields_jpsidstar()
+    p = yields_jpsidstar()
+    #print(p.Print("v"))
